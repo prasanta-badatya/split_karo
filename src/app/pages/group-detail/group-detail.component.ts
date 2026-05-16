@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GroupService } from '../../services/group.service';
+import { ImageShareService } from '../../services/image-share.service';
 import { Group } from '../../models/group.model';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -23,13 +24,19 @@ import { formatCurrency } from '../../utils/formatters';
             <h1 class="font-bold text-gray-900 text-sm truncate">{{ group()?.name }}</h1>
             <p class="text-xs text-gray-400 truncate">{{ group()?.cycleLabel }}</p>
           </div>
-          <button (click)="share()"
-            class="flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold text-brand-600 border border-brand-200 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <button (click)="shareImage()" [disabled]="isSharing()"
+            class="flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold text-brand-600 border border-brand-200 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+            <!-- Share icon -->
+            <svg *ngIf="!isSharing()" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round"
                 d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
-            Share
+            <!-- Spinner while generating -->
+            <svg *ngIf="isSharing()" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            </svg>
+            {{ isSharing() ? 'Generating…' : 'Share' }}
           </button>
         </div>
       </header>
@@ -192,12 +199,14 @@ import { formatCurrency } from '../../utils/formatters';
   `
 })
 export class GroupDetailComponent implements OnInit {
-  private route = inject(ActivatedRoute);
-  private router = inject(Router);
+  private route        = inject(ActivatedRoute);
+  private router       = inject(Router);
   private groupService = inject(GroupService);
+  private imageShare   = inject(ImageShareService);
 
-  readonly fmt = formatCurrency;
-  readonly group = signal<Group | undefined>(undefined);
+  readonly fmt       = formatCurrency;
+  readonly group     = signal<Group | undefined>(undefined);
+  readonly isSharing = signal(false);
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id') ?? '';
@@ -209,6 +218,17 @@ export class GroupDetailComponent implements OnInit {
   hasPersonalPaid(g: Group): boolean { return g.result.shares.some(s => s.personalExpensePaid > 0); }
 
   goBack(): void { this.router.navigate(['/']); }
+
+  async shareImage(): Promise<void> {
+    const g = this.group();
+    if (!g || this.isSharing()) return;
+    this.isSharing.set(true);
+    try {
+      await this.imageShare.shareImage(g);
+    } finally {
+      this.isSharing.set(false);
+    }
+  }
 
   share(): void {
     const g = this.group();
