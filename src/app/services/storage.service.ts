@@ -1,24 +1,36 @@
 import { Injectable } from '@angular/core';
+import Dexie, { Table } from 'dexie';
 import { Group } from '../models/group.model';
 
-const KEY = 'split_karo_groups';
+class AppDb extends Dexie {
+  groups!: Table<Group, string>;
+
+  constructor() {
+    super('SplitKaroDB');
+    // Version 1: index id (PK), name, and createdAt for sorting
+    this.version(1).stores({
+      groups: 'id, name, createdAt',
+    });
+  }
+}
 
 @Injectable({ providedIn: 'root' })
 export class StorageService {
-  loadGroups(): Group[] {
-    try {
-      const raw = localStorage.getItem(KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
+  private readonly db = new AppDb();
+
+  async loadGroups(): Promise<Group[]> {
+    return this.db.groups.orderBy('createdAt').reverse().toArray();
   }
 
-  saveGroups(groups: Group[]): void {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(groups));
-    } catch (e) {
-      console.error('localStorage save failed', e);
-    }
+  async saveGroup(group: Group): Promise<void> {
+    await this.db.groups.put(group);
+  }
+
+  async deleteGroup(id: string): Promise<void> {
+    await this.db.groups.delete(id);
+  }
+
+  async bulkSave(groups: Group[]): Promise<void> {
+    await this.db.groups.bulkPut(groups);
   }
 }

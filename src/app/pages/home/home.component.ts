@@ -27,8 +27,16 @@ import { formatCurrency } from '../../utils/formatters';
         </div>
       </header>
 
+      <!-- ═══ LOADING (IndexedDB initialising) ═══ -->
+      <div *ngIf="isLoading()" class="flex-1 flex items-center justify-center">
+        <div class="flex flex-col items-center gap-4">
+          <div class="w-10 h-10 border-4 border-brand-200 border-t-brand-500 rounded-full animate-spin"></div>
+          <p class="text-sm font-medium text-gray-400">Loading your groups…</p>
+        </div>
+      </div>
+
       <!-- ═══ HERO (empty state) ═══ -->
-      <ng-container *ngIf="groups().length === 0">
+      <ng-container *ngIf="!isLoading() && groups().length === 0">
         <section class="flex-1 flex items-center bg-gradient-to-br from-white via-brand-50 to-indigo-50 overflow-hidden">
           <div class="max-w-6xl mx-auto px-4 sm:px-8 w-full py-12 lg:py-0">
             <div class="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
@@ -162,7 +170,7 @@ import { formatCurrency } from '../../utils/formatters';
       </ng-container>
 
       <!-- ═══ DASHBOARD (has groups) ═══ -->
-      <ng-container *ngIf="groups().length > 0">
+      <ng-container *ngIf="!isLoading() && groups().length > 0">
         <div class="bg-slate-50 flex-1">
           <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6">
 
@@ -269,13 +277,15 @@ import { formatCurrency } from '../../utils/formatters';
 export class HomeComponent {
   private router = inject(Router);
   private groupService = inject(GroupService);
-  readonly fmt = formatCurrency;
-  readonly groups = this.groupService.groups;
-  readonly totalAmount = computed(() => this.groups().reduce((s, g) => s + g.result.grandTotal, 0));
+  readonly fmt          = formatCurrency;
+  readonly groups       = this.groupService.groups;
+  readonly isLoading    = this.groupService.isLoading;
+  readonly totalAmount  = computed(() => this.groups().reduce((s, g) => s + g.result.grandTotal, 0));
   readonly totalMembers = computed(() => this.groups().reduce((s, g) => s + g.members.length, 0));
 
   goToNew(): void { this.router.navigate(['/new']); }
   viewGroup(id: string): void { this.router.navigate(['/group', id]); }
+
   deleteGroup(event: Event, id: string): void {
     event.stopPropagation();
     if (confirm('Delete this group?')) this.groupService.deleteGroup(id);

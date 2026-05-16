@@ -657,10 +657,10 @@ export class NewGroupComponent {
     if (f.step < 4) this.formService.setStep((f.step + 1) as 2 | 3 | 4);
   }
 
-  saveGroup(): void {
+  async saveGroup(): Promise<void> {
     const f = this.form();
     const result = calculateShares(f.expenses, f.members);
-    this.groupService.addGroup({
+    await this.groupService.addGroup({
       id: nanoid(),
       name: f.groupName,
       cycleLabel: this.cycleLabel(),
