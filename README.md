@@ -4,7 +4,7 @@ A bachelor expense splitting app built with Angular. Easily split bills and trac
 
 ## Live Demo
 
-[https://prasanta-badatya.github.io/slipt_karo/](https://prasanta-badatya.github.io/slipt_karo/)
+[https://prasanta-badatya.github.io/split_karo/](https://prasanta-badatya.github.io/split_karo/)
 
 ## Features
 

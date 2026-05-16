@@ -7,7 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "deploy": "ng build --configuration production --base-href /slipt_karo/ && npx angular-cli-ghpages --dir=dist/split-karo"
+    "deploy": "ng build --configuration production --base-href /split_karo/ && npx angular-cli-ghpages --dir=dist/split-karo"
   },
   "private": true,
   "dependencies": {

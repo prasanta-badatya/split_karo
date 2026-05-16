@@ -2,13 +2,13 @@
   "name": "Split Karo",
   "short_name": "Split Karo",
   "description": "Split bills stress-free with your roommates. Track rent, ration, and vegetable expenses in one place.",
-  "start_url": "/slipt_karo/",
+  "start_url": "/split_karo/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#f8fafc",
   "theme_color": "#6366f1",
   "lang": "en-IN",
-  "scope": "/slipt_karo/",
+  "scope": "/split_karo/",
   "categories": ["finance", "utilities", "lifestyle"],
   "icons": [
     {
@@ -30,7 +30,7 @@
       "name": "New Group",
       "short_name": "New Group",
       "description": "Create a new expense-splitting group",
-      "url": "/slipt_karo/#/new-group",
+      "url": "/split_karo/#/new-group",
       "icons": [
         {
           "src": "assets/icons/icon.svg",
