@@ -1,4 +1,4 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject, computed, ViewChildren, QueryList, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -158,129 +158,142 @@ import { Member, ExpenseConfig } from '../../models/group.model';
 
           <!-- ══ STEP 2: Expenses ══ -->
           <ng-container *ngIf="form().step === 2">
-            <div class="space-y-3 anim-fade-up">
 
-              <!-- Rent Card -->
-              <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-50">
-                  <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">🏠</div>
-                  <div class="flex-1">
-                    <p class="font-semibold text-gray-800 text-sm">Room Rent</p>
-                    <p class="text-xs text-gray-400">Split equally among all members</p>
+            <!-- Single compact card — all 3 expenses as rows -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden anim-fade-up">
+
+              <!-- Column headers -->
+              <div class="flex items-center bg-gray-50 border-b border-gray-100 px-4 py-2.5 gap-3">
+                <div class="w-8 flex-shrink-0"></div>
+                <span class="flex-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Expense</span>
+                <span class="w-32 sm:w-36 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right flex-shrink-0">Amount</span>
+                <span class="w-28 text-xs font-semibold text-gray-400 uppercase tracking-wide text-center flex-shrink-0 hidden sm:block">Split</span>
+              </div>
+
+              <!-- ── Rent Row ── -->
+              <div class="border-b border-gray-100 px-4 py-3.5">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-base flex-shrink-0">🏠</div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-800">Room Rent</p>
+                    <p class="text-xs text-gray-400 hidden sm:block">Split equally among all</p>
                   </div>
-                  <span class="text-xs bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full font-medium flex-shrink-0">Equal</span>
-                </div>
-                <div class="px-5 py-4">
-                  <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Amount (₹)</label>
-                  <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand-300 focus-within:border-brand-400 transition-all">
-                    <span class="px-4 py-3 bg-gray-50 border-r border-gray-200 text-gray-400 text-sm font-medium">₹</span>
+                  <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-brand-300 transition-all w-32 sm:w-36 flex-shrink-0">
+                    <span class="px-2 py-2.5 bg-gray-50 border-r border-gray-200 text-gray-400 text-sm">₹</span>
                     <input type="number" inputmode="decimal"
                       [ngModel]="form().expenses.rentAmount"
                       (ngModelChange)="patchExpense('rentAmount', +$event)"
                       placeholder="0"
-                      class="flex-1 px-4 py-3 text-sm focus:outline-none min-w-0 font-medium" />
+                      class="flex-1 px-2 py-2.5 text-sm focus:outline-none min-w-0 font-medium" />
                   </div>
+                  <span class="w-28 text-center flex-shrink-0 hidden sm:block">
+                    <span class="text-xs bg-slate-100 text-slate-500 px-2.5 py-1 rounded-full font-medium">Equal</span>
+                  </span>
                 </div>
               </div>
 
-              <!-- Ration Card -->
-              <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden anim-fade-up anim-d1">
-                <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-50">
-                  <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">🛒</div>
-                  <div class="flex-1">
-                    <p class="font-semibold text-gray-800 text-sm">Ration / Kiryana</p>
-                    <p class="text-xs text-gray-400">Monthly grocery expenses</p>
+              <!-- ── Ration Row ── -->
+              <div class="border-b border-gray-100 px-4 py-3.5">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center text-base flex-shrink-0">🛒</div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-800">Ration / Kiryana</p>
+                    <p class="text-xs text-gray-400 hidden sm:block">Monthly groceries</p>
+                  </div>
+                  <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-brand-300 transition-all w-32 sm:w-36 flex-shrink-0">
+                    <span class="px-2 py-2.5 bg-gray-50 border-r border-gray-200 text-gray-400 text-sm">₹</span>
+                    <input type="number" inputmode="decimal"
+                      [ngModel]="form().expenses.rationAmount"
+                      (ngModelChange)="patchExpense('rationAmount', +$event)"
+                      placeholder="0"
+                      class="flex-1 px-2 py-2.5 text-sm focus:outline-none min-w-0 font-medium" />
+                  </div>
+                  <!-- Desktop segmented toggle -->
+                  <div class="w-28 flex-shrink-0 hidden sm:flex bg-gray-100 rounded-lg p-0.5">
+                    <button (click)="patchExpense('rationSplitMode', 'equal')"
+                      class="flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-200"
+                      [ngClass]="form().expenses.rationSplitMode === 'equal' ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+                      Equal
+                    </button>
+                    <button (click)="patchExpense('rationSplitMode', 'daywise')"
+                      class="flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-200"
+                      [ngClass]="form().expenses.rationSplitMode === 'daywise' ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+                      Daily
+                    </button>
                   </div>
                 </div>
-                <div class="px-5 py-4 space-y-3">
-                  <div>
-                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Amount (₹)</label>
-                    <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand-300 focus-within:border-brand-400 transition-all">
-                      <span class="px-4 py-3 bg-gray-50 border-r border-gray-200 text-gray-400 text-sm font-medium">₹</span>
-                      <input type="number" inputmode="decimal"
-                        [ngModel]="form().expenses.rationAmount"
-                        (ngModelChange)="patchExpense('rationAmount', +$event)"
-                        placeholder="0"
-                        class="flex-1 px-4 py-3 text-sm focus:outline-none min-w-0 font-medium" />
-                    </div>
-                  </div>
-                  <div>
-                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Split Mode</label>
-                    <div class="flex gap-2">
-                      <button (click)="patchExpense('rationSplitMode', 'equal')"
-                        class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 border"
-                        [ngClass]="form().expenses.rationSplitMode === 'equal'
-                          ? 'bg-brand-500 text-white border-brand-500 shadow-sm shadow-brand-200'
-                          : 'bg-white text-gray-500 border-gray-200 hover:border-brand-200 hover:text-brand-500'">
-                        ⚖️ Equal Split
-                      </button>
-                      <button (click)="patchExpense('rationSplitMode', 'daywise')"
-                        class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 border"
-                        [ngClass]="form().expenses.rationSplitMode === 'daywise'
-                          ? 'bg-brand-500 text-white border-brand-500 shadow-sm shadow-brand-200'
-                          : 'bg-white text-gray-500 border-gray-200 hover:border-brand-200 hover:text-brand-500'">
-                        📅 Day-wise
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Vegetable Card -->
-              <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden anim-fade-up anim-d2">
-                <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-50">
-                  <div class="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">🥦</div>
-                  <div class="flex-1">
-                    <p class="font-semibold text-gray-800 text-sm">Vegetable</p>
-                    <p class="text-xs text-gray-400">Fresh produce expenses</p>
-                  </div>
-                </div>
-                <div class="px-5 py-4 space-y-3">
-                  <div>
-                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Amount (₹)</label>
-                    <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand-300 focus-within:border-brand-400 transition-all">
-                      <span class="px-4 py-3 bg-gray-50 border-r border-gray-200 text-gray-400 text-sm font-medium">₹</span>
-                      <input type="number" inputmode="decimal"
-                        [ngModel]="form().expenses.vegetableAmount"
-                        (ngModelChange)="patchExpense('vegetableAmount', +$event)"
-                        placeholder="0"
-                        class="flex-1 px-4 py-3 text-sm focus:outline-none min-w-0 font-medium" />
-                    </div>
-                  </div>
-                  <div>
-                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Split Mode</label>
-                    <div class="flex gap-2">
-                      <button (click)="patchExpense('vegetableSplitMode', 'equal')"
-                        class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 border"
-                        [ngClass]="form().expenses.vegetableSplitMode === 'equal'
-                          ? 'bg-brand-500 text-white border-brand-500 shadow-sm shadow-brand-200'
-                          : 'bg-white text-gray-500 border-gray-200 hover:border-brand-200 hover:text-brand-500'">
-                        ⚖️ Equal Split
-                      </button>
-                      <button (click)="patchExpense('vegetableSplitMode', 'daywise')"
-                        class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 border"
-                        [ngClass]="form().expenses.vegetableSplitMode === 'daywise'
-                          ? 'bg-brand-500 text-white border-brand-500 shadow-sm shadow-brand-200'
-                          : 'bg-white text-gray-500 border-gray-200 hover:border-brand-200 hover:text-brand-500'">
-                        📅 Day-wise
-                      </button>
-                    </div>
-                  </div>
+                <!-- Mobile toggle (below row, indented) -->
+                <div class="sm:hidden flex gap-1.5 mt-2 pl-11">
+                  <button (click)="patchExpense('rationSplitMode', 'equal')"
+                    class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border"
+                    [ngClass]="form().expenses.rationSplitMode === 'equal' ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-gray-500 border-gray-200'">
+                    ⚖️ Equal
+                  </button>
+                  <button (click)="patchExpense('rationSplitMode', 'daywise')"
+                    class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border"
+                    [ngClass]="form().expenses.rationSplitMode === 'daywise' ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-gray-500 border-gray-200'">
+                    📅 Day-wise
+                  </button>
                 </div>
               </div>
 
-              <!-- Live Total Summary -->
-              <div *ngIf="liveTotal() > 0"
-                class="bg-gradient-to-r from-brand-500 to-brand-600 rounded-2xl p-4 text-white flex items-center justify-between shadow-md shadow-brand-200 anim-scale-in">
-                <div>
-                  <p class="text-brand-200 text-xs font-medium">Grand Total (so far)</p>
-                  <p class="text-2xl font-bold mt-0.5">{{ fmt(liveTotal()) }}</p>
+              <!-- ── Vegetable Row ── -->
+              <div class="px-4 py-3.5">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center text-base flex-shrink-0">🥦</div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-800">Vegetable</p>
+                    <p class="text-xs text-gray-400 hidden sm:block">Fresh produce</p>
+                  </div>
+                  <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-brand-300 transition-all w-32 sm:w-36 flex-shrink-0">
+                    <span class="px-2 py-2.5 bg-gray-50 border-r border-gray-200 text-gray-400 text-sm">₹</span>
+                    <input type="number" inputmode="decimal"
+                      [ngModel]="form().expenses.vegetableAmount"
+                      (ngModelChange)="patchExpense('vegetableAmount', +$event)"
+                      placeholder="0"
+                      class="flex-1 px-2 py-2.5 text-sm focus:outline-none min-w-0 font-medium" />
+                  </div>
+                  <!-- Desktop segmented toggle -->
+                  <div class="w-28 flex-shrink-0 hidden sm:flex bg-gray-100 rounded-lg p-0.5">
+                    <button (click)="patchExpense('vegetableSplitMode', 'equal')"
+                      class="flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-200"
+                      [ngClass]="form().expenses.vegetableSplitMode === 'equal' ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+                      Equal
+                    </button>
+                    <button (click)="patchExpense('vegetableSplitMode', 'daywise')"
+                      class="flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-200"
+                      [ngClass]="form().expenses.vegetableSplitMode === 'daywise' ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+                      Daily
+                    </button>
+                  </div>
                 </div>
-                <div class="text-right text-brand-200 text-xs space-y-0.5">
-                  <p *ngIf="form().expenses.rentAmount > 0">🏠 {{ fmt(form().expenses.rentAmount) }}</p>
-                  <p *ngIf="form().expenses.rationAmount > 0">🛒 {{ fmt(form().expenses.rationAmount) }}</p>
-                  <p *ngIf="form().expenses.vegetableAmount > 0">🥦 {{ fmt(form().expenses.vegetableAmount) }}</p>
+                <!-- Mobile toggle (below row, indented) -->
+                <div class="sm:hidden flex gap-1.5 mt-2 pl-11">
+                  <button (click)="patchExpense('vegetableSplitMode', 'equal')"
+                    class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border"
+                    [ngClass]="form().expenses.vegetableSplitMode === 'equal' ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-gray-500 border-gray-200'">
+                    ⚖️ Equal
+                  </button>
+                  <button (click)="patchExpense('vegetableSplitMode', 'daywise')"
+                    class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border"
+                    [ngClass]="form().expenses.vegetableSplitMode === 'daywise' ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-gray-500 border-gray-200'">
+                    📅 Day-wise
+                  </button>
                 </div>
+              </div>
+            </div>
+
+            <!-- Live Grand Total -->
+            <div *ngIf="liveTotal() > 0"
+              class="mt-3 bg-gradient-to-r from-brand-500 to-brand-600 rounded-2xl p-4 text-white flex items-center justify-between shadow-md shadow-brand-200 anim-scale-in">
+              <div>
+                <p class="text-brand-200 text-xs font-medium">Grand Total</p>
+                <p class="text-2xl font-bold mt-0.5">{{ fmt(liveTotal()) }}</p>
+              </div>
+              <div class="text-right text-brand-200 text-xs space-y-0.5">
+                <p *ngIf="form().expenses.rentAmount > 0">🏠 {{ fmt(form().expenses.rentAmount) }}</p>
+                <p *ngIf="form().expenses.rationAmount > 0">🛒 {{ fmt(form().expenses.rationAmount) }}</p>
+                <p *ngIf="form().expenses.vegetableAmount > 0">🥦 {{ fmt(form().expenses.vegetableAmount) }}</p>
               </div>
             </div>
           </ng-container>
@@ -327,7 +340,7 @@ import { Member, ExpenseConfig } from '../../models/group.model';
                               : 'bg-gray-100 text-gray-400'">
                             {{ member.name.trim() ? member.name.trim().slice(0,2).toUpperCase() : (i + 1) }}
                           </div>
-                          <input type="text"
+                          <input type="text" #nameInput
                             [ngModel]="member.name"
                             (ngModelChange)="updateMember(member.id, 'name', $event)"
                             placeholder="Member name"
@@ -430,6 +443,9 @@ import { Member, ExpenseConfig } from '../../models/group.model';
                 <p class="text-lg mb-1">💰</p>
                 <p class="text-xs text-brand-200 mb-1">Grand Total</p>
                 <p class="font-bold text-white">{{ fmt(result().grandTotal) }}</p>
+                <p *ngIf="result().shares.length > 0" class="text-xs text-brand-300 mt-1.5 border-t border-white/10 pt-1.5">
+                  avg {{ fmt(avgPerMember()) }}/member
+                </p>
               </div>
             </div>
 
@@ -481,6 +497,10 @@ import { Member, ExpenseConfig } from '../../models/group.model';
                           <span class="text-xs mt-0.5" [ngClass]="share.total < 0 ? 'text-emerald-400' : 'text-gray-400'">
                             {{ share.total < 0 ? 'Gets back' : 'Pays' }}
                           </span>
+                          <span *ngIf="hasDaywiseSplit() && memberDaysMap().get(share.memberId)"
+                            class="text-xs text-gray-400 mt-1 bg-gray-50 border border-gray-100 rounded-md px-1.5 py-0.5">
+                            ≈ {{ fmt(share.subtotal / memberDaysMap().get(share.memberId)!) }}/day
+                          </span>
                         </div>
                       </td>
                     </tr>
@@ -526,6 +546,8 @@ export class NewGroupComponent {
   private formService = inject(GroupFormService);
   private groupService = inject(GroupService);
 
+  @ViewChildren('nameInput') nameInputs!: QueryList<ElementRef<HTMLInputElement>>;
+
   readonly form = this.formService.form;
   readonly fmt = formatCurrency;
 
@@ -569,6 +591,20 @@ export class NewGroupComponent {
     if (!fromDate || !toDate) return '';
     const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' };
     return `${new Date(fromDate + 'T00:00:00').toLocaleDateString('en-IN', opts)} – ${new Date(toDate + 'T00:00:00').toLocaleDateString('en-IN', opts)}`;
+  });
+
+  readonly memberDaysMap = computed(() =>
+    new Map(this.form().members.map(m => [m.id, m.daysPresent]))
+  );
+
+  readonly avgPerMember = computed(() => {
+    const count = this.result().shares.length;
+    return count > 0 ? this.result().grandTotal / count : 0;
+  });
+
+  readonly hasDaywiseSplit = computed(() => {
+    const e = this.form().expenses;
+    return e.rationSplitMode === 'daywise' || e.vegetableSplitMode === 'daywise';
   });
 
   readonly cycleLabelShort = computed(() => {
@@ -653,7 +689,13 @@ export class NewGroupComponent {
     this.formService.setExpenses({ ...this.form().expenses, [key]: value });
   }
 
-  addMember(): void { this.formService.addMember(); }
+  addMember(): void {
+    this.formService.addMember();
+    setTimeout(() => {
+      const inputs = this.nameInputs.toArray();
+      if (inputs.length) inputs[inputs.length - 1].nativeElement.focus();
+    }, 50);
+  }
 
   updateMember(id: string, key: keyof Member, value: any): void {
     this.formService.updateMember(id, { [key]: value });
@@ -661,10 +703,7 @@ export class NewGroupComponent {
 
   removeMember(id: string): void { this.formService.removeMember(id); }
 
-  isDaywise(): boolean {
-    const e = this.form().expenses;
-    return e.rationSplitMode === 'daywise' || e.vegetableSplitMode === 'daywise';
-  }
+  isDaywise(): boolean { return this.hasDaywiseSplit(); }
 
   hasRation(): boolean { return this.form().expenses.rationAmount > 0; }
   hasVegetable(): boolean { return this.form().expenses.vegetableAmount > 0; }
