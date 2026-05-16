@@ -1,29 +1,48 @@
 # SplitKaro
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 16.2.1.
+A bachelor expense splitting app built with Angular. Easily split bills and track shared expenses among friends or roommates.
 
-## Development server
+## Live Demo
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+[https://prasanta-badatya.github.io/slipt_karo/](https://prasanta-badatya.github.io/slipt_karo/)
 
-## Code scaffolding
+## Features
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+- Split expenses among multiple members
+- Track per-member and per-day rates
+- Billing period date picker
+- Installable PWA with offline support
+- Share expense summary as image
 
-## Build
+## Getting Started
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+### Prerequisites
 
-## Running unit tests
+- Node.js
+- Angular CLI 16
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+### Install dependencies
 
-## Running end-to-end tests
+```bash
+npm install
+```
 
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+### Run development server
 
-## Further help
+```bash
+npm start
+```
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
-# split_karo
-Bachelor expense splitting app built with Angular.
+Navigate to `http://localhost:4200/`
+
+### Build for production
+
+```bash
+npm run build
+```
+
+### Deploy to GitHub Pages
+
+```bash
+npm run deploy
+```
