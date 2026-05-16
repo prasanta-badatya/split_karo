@@ -313,77 +313,70 @@ import { Member, ExpenseConfig } from '../../models/group.model';
               </button>
             </div>
 
-            <!-- Member Table -->
-            <div *ngIf="form().members.length > 0"
-              class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-4 anim-fade-up">
-              <div class="overflow-x-auto">
-                <table class="w-full text-sm" style="min-width: 480px">
-                  <thead>
-                    <tr class="border-b border-gray-100 bg-gray-50">
-                      <th class="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Member</th>
-                      <th *ngIf="isDaywise()" class="py-3 px-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-20">Days</th>
-                      <th *ngIf="hasRation()" class="py-3 px-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-16">Ration</th>
-                      <th *ngIf="hasVegetable()" class="py-3 px-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-16">Veggie</th>
-                      <th class="py-3 px-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Paid (₹)</th>
-                      <th class="w-10"></th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-gray-50">
-                    <tr *ngFor="let member of form().members; let i = index; trackBy: trackMember"
-                      class="hover:bg-gray-50 transition-colors">
-                      <td class="py-2.5 px-4">
-                        <div class="flex items-center gap-2.5">
-                          <!-- Numbered avatar -->
-                          <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all"
-                            [ngClass]="member.name.trim()
-                              ? 'bg-brand-500 text-white'
-                              : 'bg-gray-100 text-gray-400'">
-                            {{ member.name.trim() ? member.name.trim().slice(0,2).toUpperCase() : (i + 1) }}
-                          </div>
-                          <input type="text" #nameInput
-                            [ngModel]="member.name"
-                            (ngModelChange)="updateMember(member.id, 'name', $event)"
-                            placeholder="Member name"
-                            class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-transparent transition-all min-w-0" />
-                        </div>
-                      </td>
-                      <td *ngIf="isDaywise()" class="py-2.5 px-3 text-center">
-                        <input type="number" inputmode="decimal" min="0" max="31"
-                          [ngModel]="member.daysPresent"
-                          (ngModelChange)="updateMember(member.id, 'daysPresent', +$event)"
-                          class="w-16 border border-gray-200 rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-transparent" />
-                      </td>
-                      <td *ngIf="hasRation()" class="py-2.5 px-3 text-center">
-                        <input type="checkbox"
-                          [ngModel]="member.includeRation"
-                          (ngModelChange)="updateMember(member.id, 'includeRation', $event)"
-                          class="w-4 h-4 cursor-pointer rounded" />
-                      </td>
-                      <td *ngIf="hasVegetable()" class="py-2.5 px-3 text-center">
-                        <input type="checkbox"
-                          [ngModel]="member.includeVegetable"
-                          (ngModelChange)="updateMember(member.id, 'includeVegetable', $event)"
-                          class="w-4 h-4 cursor-pointer rounded" />
-                      </td>
-                      <td class="py-2.5 px-4">
-                        <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-brand-300 focus-within:border-transparent transition-all">
-                          <span class="px-2 py-2 bg-gray-50 border-r border-gray-200 text-gray-400 text-xs">₹</span>
-                          <input type="number" inputmode="decimal"
-                            [ngModel]="member.personalExpensePaid"
-                            (ngModelChange)="updateMember(member.id, 'personalExpensePaid', +$event)"
-                            placeholder="0"
-                            class="flex-1 px-2 py-2 text-sm focus:outline-none w-full min-w-0" />
-                        </div>
-                      </td>
-                      <td class="py-2.5 px-3 text-center">
-                        <button (click)="removeMember(member.id)"
-                          class="text-gray-300 hover:text-rose-500 transition-colors p-1 rounded text-sm leading-none">
-                          ✕
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+            <!-- Member Cards -->
+            <div *ngIf="form().members.length > 0" class="space-y-3 mb-4">
+              <div *ngFor="let member of form().members; let i = index; trackBy: trackMember"
+                class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 anim-fade-up">
+
+                <!-- Row 1: Avatar + Name + Delete -->
+                <div class="flex items-center gap-2.5 mb-3">
+                  <div class="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all"
+                    [ngClass]="member.name.trim() ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-400'">
+                    {{ member.name.trim() ? member.name.trim().slice(0,2).toUpperCase() : (i + 1) }}
+                  </div>
+                  <input type="text" #nameInput
+                    [ngModel]="member.name"
+                    (ngModelChange)="updateMember(member.id, 'name', $event)"
+                    placeholder="Member name"
+                    class="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-transparent transition-all min-w-0" />
+                  <button (click)="removeMember(member.id)"
+                    class="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors flex-shrink-0">
+                    ✕
+                  </button>
+                </div>
+
+                <!-- Row 2: Paid + Days (side by side) -->
+                <div class="flex gap-3 mb-3">
+                  <!-- Personal Expense Paid -->
+                  <div class="flex-1">
+                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Personal Paid (₹)</label>
+                    <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-brand-300 transition-all">
+                      <span class="px-2.5 py-2.5 bg-gray-50 border-r border-gray-200 text-gray-400 text-xs">₹</span>
+                      <input type="number" inputmode="decimal"
+                        [ngModel]="member.personalExpensePaid"
+                        (ngModelChange)="updateMember(member.id, 'personalExpensePaid', +$event)"
+                        placeholder="0"
+                        class="flex-1 px-2.5 py-2.5 text-sm focus:outline-none min-w-0" />
+                    </div>
+                  </div>
+                  <!-- Days Present (only if daywise) -->
+                  <div *ngIf="isDaywise()" class="w-28 flex-shrink-0">
+                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Days Present</label>
+                    <input type="number" inputmode="decimal" min="0" max="31"
+                      [ngModel]="member.daysPresent"
+                      (ngModelChange)="updateMember(member.id, 'daysPresent', +$event)"
+                      class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-transparent transition-all" />
+                  </div>
+                </div>
+
+                <!-- Row 3: Ration + Veggie checkboxes -->
+                <div *ngIf="hasRation() || hasVegetable()" class="flex gap-4">
+                  <label *ngIf="hasRation()" class="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox"
+                      [ngModel]="member.includeRation"
+                      (ngModelChange)="updateMember(member.id, 'includeRation', $event)"
+                      class="w-4 h-4 rounded accent-orange-500 cursor-pointer" />
+                    <span class="text-sm text-gray-600 font-medium">🛒 Ration</span>
+                  </label>
+                  <label *ngIf="hasVegetable()" class="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox"
+                      [ngModel]="member.includeVegetable"
+                      (ngModelChange)="updateMember(member.id, 'includeVegetable', $event)"
+                      class="w-4 h-4 rounded accent-orange-500 cursor-pointer" />
+                    <span class="text-sm text-gray-600 font-medium">🥦 Veggie</span>
+                  </label>
+                </div>
+
               </div>
             </div>
 
