@@ -50,7 +50,8 @@ export interface Group {
 export interface FormState {
   step: 1 | 2 | 3 | 4;
   groupName: string;
-  cycleLabel: string;
+  fromDate: string;
+  toDate: string;
   expenses: ExpenseConfig;
   members: Member[];
 }

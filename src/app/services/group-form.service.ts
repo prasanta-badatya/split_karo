@@ -13,7 +13,8 @@ const defaultExpenses: ExpenseConfig = {
 const defaultState: FormState = {
   step: 1,
   groupName: '',
-  cycleLabel: '',
+  fromDate: '',
+  toDate: '',
   expenses: { ...defaultExpenses },
   members: [],
 };
@@ -30,8 +31,8 @@ export class GroupFormService {
     this.form.update(f => ({ ...f, step }));
   }
 
-  setGroupInfo(groupName: string, cycleLabel: string): void {
-    this.form.update(f => ({ ...f, groupName, cycleLabel }));
+  setGroupInfo(groupName: string, fromDate: string, toDate: string): void {
+    this.form.update(f => ({ ...f, groupName, fromDate, toDate }));
   }
 
   setExpenses(expenses: ExpenseConfig): void {
@@ -42,7 +43,7 @@ export class GroupFormService {
     const newMember: Member = {
       id: nanoid(),
       name: '',
-      daysPresent: 15,
+      daysPresent: 30,
       includeRation: true,
       includeVegetable: true,
       personalExpensePaid: 0,

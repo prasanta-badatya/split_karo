@@ -3,7 +3,6 @@
 @tailwind utilities;
 
 * { box-sizing: border-box; }
-
 html { scroll-behavior: smooth; }
 
 body {
@@ -14,13 +13,56 @@ body {
   color: #111827;
 }
 
-input[type=number] { -moz-appearance: textfield; }
+input[type=number]  { -moz-appearance: textfield; }
 input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-
 input[type=checkbox] { accent-color: #6366f1; }
 
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+/* ─── Animations ─── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInRight {
+  from { opacity: 0; transform: translateX(36px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes fadeInLeft {
+  from { opacity: 0; transform: translateX(-36px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+@keyframes pulse-ring {
+  0%   { transform: scale(1); opacity: 0.4; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+.anim-fade-up    { animation: fadeInUp    0.55s ease-out both; }
+.anim-fade-right { animation: fadeInRight 0.60s ease-out both; }
+.anim-fade-left  { animation: fadeInLeft  0.60s ease-out both; }
+.anim-fade-in    { animation: fadeIn      0.45s ease-out both; }
+.anim-scale-in   { animation: scaleIn     0.50s ease-out both; }
+.anim-float      { animation: floatY      4s ease-in-out infinite; }
+
+.anim-d1  { animation-delay: 0.10s; }
+.anim-d2  { animation-delay: 0.20s; }
+.anim-d3  { animation-delay: 0.30s; }
+.anim-d4  { animation-delay: 0.40s; }
+.anim-d5  { animation-delay: 0.55s; }
+.anim-d6  { animation-delay: 0.70s; }

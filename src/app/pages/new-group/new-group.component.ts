@@ -54,9 +54,11 @@ import { Member, ExpenseConfig } from '../../models/group.model';
 
           <!-- ══ STEP 1: Group Info ══ -->
           <ng-container *ngIf="form().step === 1">
-            <h2 class="text-lg font-bold text-gray-900 mb-1">Group Details</h2>
-            <p class="text-sm text-gray-400 mb-6">Name your group and set the billing period.</p>
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+            <h2 class="text-lg font-bold text-gray-900 mb-1 anim-fade-up">Group Details</h2>
+            <p class="text-sm text-gray-400 mb-6 anim-fade-up anim-d1">Name your group and set the billing period.</p>
+
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-5 anim-fade-up anim-d2">
+              <!-- Group Name -->
               <div>
                 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Group Name *</label>
                 <input type="text" inputmode="text"
@@ -65,23 +67,40 @@ import { Member, ExpenseConfig } from '../../models/group.model';
                   placeholder="e.g. Room 5 – May 2026"
                   class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-brand-400 transition-all" />
               </div>
+
+              <!-- Billing Period: From → To -->
               <div>
                 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Billing Period *</label>
-                <input type="text" inputmode="text"
-                  [ngModel]="form().cycleLabel"
-                  (ngModelChange)="patchCycleLabel($event)"
-                  placeholder="e.g. 1 May – 31 May 2026"
-                  class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-brand-400 transition-all" />
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs text-gray-400 mb-1">From</label>
+                    <input type="date"
+                      [ngModel]="form().fromDate"
+                      (ngModelChange)="patchFromDate($event)"
+                      class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-brand-400 transition-all text-gray-700" />
+                  </div>
+                  <div>
+                    <label class="block text-xs text-gray-400 mb-1">To</label>
+                    <input type="date"
+                      [ngModel]="form().toDate"
+                      (ngModelChange)="patchToDate($event)"
+                      [min]="form().fromDate"
+                      class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-brand-400 transition-all text-gray-700" />
+                  </div>
+                </div>
+                <p *ngIf="cycleLabel()" class="text-xs text-brand-600 font-medium mt-2">
+                  📅 {{ cycleLabel() }}
+                </p>
               </div>
             </div>
           </ng-container>
 
           <!-- ══ STEP 2: Expenses ══ -->
           <ng-container *ngIf="form().step === 2">
-            <h2 class="text-lg font-bold text-gray-900 mb-1">Expense Amounts</h2>
-            <p class="text-sm text-gray-400 mb-6">Enter totals and choose how each expense is divided.</p>
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <h2 class="text-lg font-bold text-gray-900 mb-1 anim-fade-up">Expense Amounts</h2>
+            <p class="text-sm text-gray-400 mb-6 anim-fade-up anim-d1">Enter totals and choose how each expense is divided.</p>
 
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden anim-fade-up anim-d2">
               <!-- Column headers (desktop) -->
               <div class="hidden sm:grid sm:grid-cols-[1fr_180px_220px] border-b border-gray-100 bg-gray-50 px-5 py-3 gap-4">
                 <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Expense Type</span>
@@ -136,16 +155,12 @@ import { Member, ExpenseConfig } from '../../models/group.model';
                       class="flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-xs font-semibold transition-all"
                       [ngClass]="form().expenses.rationSplitMode === 'equal'
                         ? 'bg-brand-500 text-white shadow-sm'
-                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'">
-                      Equal
-                    </button>
+                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'">Equal</button>
                     <button (click)="patchExpense('rationSplitMode', 'daywise')"
                       class="flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-xs font-semibold transition-all"
                       [ngClass]="form().expenses.rationSplitMode === 'daywise'
                         ? 'bg-brand-500 text-white shadow-sm'
-                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'">
-                      Day-wise
-                    </button>
+                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'">Day-wise</button>
                   </div>
                 </div>
               </div>
@@ -173,36 +188,31 @@ import { Member, ExpenseConfig } from '../../models/group.model';
                       class="flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-xs font-semibold transition-all"
                       [ngClass]="form().expenses.vegetableSplitMode === 'equal'
                         ? 'bg-brand-500 text-white shadow-sm'
-                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'">
-                      Equal
-                    </button>
+                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'">Equal</button>
                     <button (click)="patchExpense('vegetableSplitMode', 'daywise')"
                       class="flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-xs font-semibold transition-all"
                       [ngClass]="form().expenses.vegetableSplitMode === 'daywise'
                         ? 'bg-brand-500 text-white shadow-sm'
-                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'">
-                      Day-wise
-                    </button>
+                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'">Day-wise</button>
                   </div>
                 </div>
               </div>
-
             </div>
           </ng-container>
 
           <!-- ══ STEP 3: Members ══ -->
           <ng-container *ngIf="form().step === 3">
             <div class="flex items-center justify-between mb-1">
-              <h2 class="text-lg font-bold text-gray-900">Add Members</h2>
-              <span class="text-xs bg-gray-100 text-gray-500 px-2.5 py-1 rounded-full font-medium">
+              <h2 class="text-lg font-bold text-gray-900 anim-fade-up">Add Members</h2>
+              <span class="text-xs bg-gray-100 text-gray-500 px-2.5 py-1 rounded-full font-medium anim-fade-up anim-d1">
                 {{ form().members.length }} member{{ form().members.length !== 1 ? 's' : '' }}
               </span>
             </div>
-            <p class="text-sm text-gray-400 mb-6">Add everyone sharing the expenses this cycle.</p>
+            <p class="text-sm text-gray-400 mb-6 anim-fade-up anim-d1">Add everyone sharing the expenses this cycle.</p>
 
             <!-- Empty state -->
             <div *ngIf="form().members.length === 0"
-              class="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-14 text-center mb-4">
+              class="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-14 text-center mb-4 anim-scale-in">
               <div class="text-4xl mb-3">👥</div>
               <p class="font-semibold text-gray-600 text-sm">No members added yet</p>
               <p class="text-xs text-gray-400 mt-1">Click the button below to get started</p>
@@ -210,7 +220,7 @@ import { Member, ExpenseConfig } from '../../models/group.model';
 
             <!-- Member Table -->
             <div *ngIf="form().members.length > 0"
-              class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-4">
+              class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-4 anim-fade-up anim-d2">
               <div class="overflow-x-auto">
                 <table class="w-full text-sm" style="min-width: 460px">
                   <thead>
@@ -274,18 +284,18 @@ import { Member, ExpenseConfig } from '../../models/group.model';
 
             <!-- Add member CTA -->
             <button (click)="addMember()"
-              class="w-full py-3 border-2 border-dashed border-brand-200 rounded-xl text-brand-500 font-semibold text-sm hover:border-brand-400 hover:bg-brand-50 transition-all flex items-center justify-center gap-2">
+              class="w-full py-3 border-2 border-dashed border-brand-200 rounded-xl text-brand-500 font-semibold text-sm hover:border-brand-400 hover:bg-brand-50 transition-all flex items-center justify-center gap-2 anim-fade-up anim-d3">
               <span class="text-lg leading-none">+</span> Add Member
             </button>
           </ng-container>
 
           <!-- ══ STEP 4: Preview ══ -->
           <ng-container *ngIf="form().step === 4">
-            <h2 class="text-lg font-bold text-gray-900 mb-1">Calculation Preview</h2>
-            <p class="text-sm text-gray-400 mb-6">{{ form().groupName }} · {{ form().cycleLabel }}</p>
+            <h2 class="text-lg font-bold text-gray-900 mb-1 anim-fade-up">Calculation Preview</h2>
+            <p class="text-sm text-gray-400 mb-6 anim-fade-up anim-d1">{{ form().groupName }} · {{ cycleLabel() }}</p>
 
             <!-- Expense Summary Cards -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 anim-fade-up anim-d2">
               <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 text-center">
                 <p class="text-xs text-gray-400 mb-1.5">🏠 Rent</p>
                 <p class="font-bold text-gray-900">{{ fmt(result().totalRent) }}</p>
@@ -305,7 +315,7 @@ import { Member, ExpenseConfig } from '../../models/group.model';
             </div>
 
             <!-- Breakdown Table -->
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden anim-fade-up anim-d3">
               <div class="px-5 py-4 border-b border-gray-100 bg-gray-50">
                 <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Member Breakdown</h3>
               </div>
@@ -390,9 +400,15 @@ export class NewGroupComponent {
     { n: 4, label: 'Preview' },
   ];
 
-  readonly result = computed(() => {
-    const f = this.form();
-    return calculateShares(f.expenses, f.members);
+  readonly result = computed(() => calculateShares(this.form().expenses, this.form().members));
+
+  readonly cycleLabel = computed(() => {
+    const { fromDate, toDate } = this.form();
+    if (!fromDate || !toDate) return '';
+    const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' };
+    const f = new Date(fromDate + 'T00:00:00');
+    const t = new Date(toDate + 'T00:00:00');
+    return `${f.toLocaleDateString('en-IN', opts)} – ${t.toLocaleDateString('en-IN', opts)}`;
   });
 
   stepCircleClass(n: number): string {
@@ -422,14 +438,12 @@ export class NewGroupComponent {
 
   nextStep(): void {
     const f = this.form();
-    if (f.step === 1 && (!f.groupName.trim() || !f.cycleLabel.trim())) {
-      alert('Please fill Group Name and Billing Period');
-      return;
+    if (f.step === 1) {
+      if (!f.groupName.trim()) { alert('Please enter a Group Name'); return; }
+      if (!f.fromDate || !f.toDate) { alert('Please select both From and To dates'); return; }
+      if (f.toDate < f.fromDate) { alert('End date must be after start date'); return; }
     }
-    if (f.step === 3 && f.members.length === 0) {
-      alert('Please add at least one member');
-      return;
-    }
+    if (f.step === 3 && f.members.length === 0) { alert('Please add at least one member'); return; }
     if (f.step === 3) {
       const invalid = f.members.find(m => !m.name.trim());
       if (invalid) { alert('Please fill all member names'); return; }
@@ -443,7 +457,7 @@ export class NewGroupComponent {
     this.groupService.addGroup({
       id: nanoid(),
       name: f.groupName,
-      cycleLabel: f.cycleLabel,
+      cycleLabel: this.cycleLabel(),
       createdAt: new Date().toISOString(),
       expenses: f.expenses,
       members: f.members,
@@ -454,11 +468,15 @@ export class NewGroupComponent {
   }
 
   patchGroupName(value: string): void {
-    this.formService.setGroupInfo(value, this.form().cycleLabel);
+    this.formService.setGroupInfo(value, this.form().fromDate, this.form().toDate);
   }
 
-  patchCycleLabel(value: string): void {
-    this.formService.setGroupInfo(this.form().groupName, value);
+  patchFromDate(value: string): void {
+    this.formService.setGroupInfo(this.form().groupName, value, this.form().toDate);
+  }
+
+  patchToDate(value: string): void {
+    this.formService.setGroupInfo(this.form().groupName, this.form().fromDate, value);
   }
 
   patchExpense(key: keyof ExpenseConfig, value: any): void {
