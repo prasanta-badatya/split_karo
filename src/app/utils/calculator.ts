@@ -1,72 +1,65 @@
 import { ExpenseConfig, Member, MemberShare, CalculationResult } from '../models/group.model';
 
 export function calculateShares(expenses: ExpenseConfig, members: Member[]): CalculationResult {
+  const { rentAmount, rationAmount, vegetableAmount, splitMode } = expenses;
+  const grandTotal = rentAmount + rationAmount + vegetableAmount;
+
   if (members.length === 0) {
-    return { shares: [], totalRent: 0, totalRation: 0, totalVegetable: 0, grandTotal: 0, calculatedAt: new Date().toISOString() };
+    return { shares: [], totalRent: rentAmount, totalRation: rationAmount, totalVegetable: vegetableAmount, grandTotal, verificationOk: true, calculatedAt: new Date().toISOString() };
   }
 
-  const rentPerPerson = expenses.rentAmount / members.length;
+  // 1. Rent — always equal among ALL members
+  const rentShare = rentAmount / members.length;
 
-  // Ration shares
-  const rationApplicable = members.filter(m => m.includeRation);
-  const rationShareMap = buildShareMap(expenses.rationAmount, expenses.rationSplitMode, rationApplicable);
+  // 2. Ration + Veggie — combined pool, one mode
+  const pool = rationAmount + vegetableAmount;
+  const included = members.filter(m => m.includeRationVeg);
+  const rationVegMap: Record<string, number> = {};
 
-  // Vegetable shares
-  const vegetableApplicable = members.filter(m => m.includeVegetable);
-  const vegetableShareMap = buildShareMap(expenses.vegetableAmount, expenses.vegetableSplitMode, vegetableApplicable);
+  if (pool > 0 && included.length > 0) {
+    if (splitMode === 'equal') {
+      const share = pool / included.length;
+      included.forEach(m => (rationVegMap[m.id] = share));
+    } else {
+      const totalDays = included.reduce((s, m) => s + m.daysPresent, 0);
+      if (totalDays > 0) {
+        included.forEach(m => (rationVegMap[m.id] = (m.daysPresent / totalDays) * pool));
+      }
+    }
+  }
 
-  // Build raw shares
-  const rawShares: MemberShare[] = members.map(m => {
-    const rent = rentPerPerson;
-    const ration = rationShareMap[m.id] ?? 0;
-    const veg = vegetableShareMap[m.id] ?? 0;
-    const subtotal = rent + ration + veg;
-    const total = subtotal - m.personalExpensePaid;
+  // 3. Build shares
+  const shares: MemberShare[] = members.map(m => {
+    const rv = rationVegMap[m.id] ?? 0;
+    const gross = rentShare + rv;
     return {
       memberId: m.id,
       memberName: m.name,
-      rentShare: rent,
-      rationShare: ration,
-      vegetableShare: veg,
+      rentShare,
+      rationVegShare: rv,
       personalExpensePaid: m.personalExpensePaid,
-      subtotal,
-      total,
+      grossTotal: gross,
+      total: gross - m.personalExpensePaid,
     };
   });
 
-  // Round each total, then adjust last person so sum stays exact
-  const exactGrandTotal = expenses.rentAmount + expenses.rationAmount + expenses.vegetableAmount;
-  const totalPersonalPaid = members.reduce((s, m) => s + m.personalExpensePaid, 0);
-  const exactNetTotal = exactGrandTotal - totalPersonalPaid;
-
-  const rounded = rawShares.map(s => ({ ...s, total: Math.round(s.total) }));
-  const roundedSum = rounded.reduce((s, r) => s + r.total, 0);
-  const adjustment = Math.round(exactNetTotal) - roundedSum;
-  if (rounded.length > 0) {
-    rounded[rounded.length - 1].total += adjustment;
-  }
+  // 4. Verification: sum of grossTotals must equal grandTotal
+  const grossSum = shares.reduce((s, sh) => s + sh.grossTotal, 0);
+  const verificationOk = Math.abs(grossSum - grandTotal) < 0.01;
 
   return {
-    shares: rounded,
-    totalRent: expenses.rentAmount,
-    totalRation: expenses.rationAmount,
-    totalVegetable: expenses.vegetableAmount,
-    grandTotal: exactGrandTotal,
+    shares,
+    totalRent: rentAmount,
+    totalRation: rationAmount,
+    totalVegetable: vegetableAmount,
+    grandTotal,
+    verificationOk,
     calculatedAt: new Date().toISOString(),
   };
 }
 
-function buildShareMap(amount: number, mode: 'equal' | 'daywise', applicable: Member[]): Record<string, number> {
-  const map: Record<string, number> = {};
-  if (amount === 0 || applicable.length === 0) return map;
-
-  if (mode === 'equal') {
-    const share = amount / applicable.length;
-    applicable.forEach(m => (map[m.id] = share));
-  } else {
-    const totalDays = applicable.reduce((s, m) => s + m.daysPresent, 0);
-    if (totalDays === 0) return map;
-    applicable.forEach(m => (map[m.id] = (m.daysPresent / totalDays) * amount));
-  }
-  return map;
+export function fmt(amount: number): string {
+  const abs = Math.abs(amount);
+  const formatted = abs % 1 === 0 ? abs.toLocaleString('en-IN') : abs.toFixed(2);
+  return '₹' + formatted;
 }

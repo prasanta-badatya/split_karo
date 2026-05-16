@@ -6,7 +6,7 @@ import { GroupFormService } from '../../services/group-form.service';
 import { GroupService } from '../../services/group.service';
 import { calculateShares } from '../../utils/calculator';
 import { nanoid, formatCurrency } from '../../utils/formatters';
-import { Member, ExpenseConfig } from '../../models/group.model';
+import { Member, ExpenseConfig, SplitMode } from '../../models/group.model';
 
 @Component({
   selector: 'app-new-group',
@@ -208,37 +208,11 @@ import { Member, ExpenseConfig } from '../../models/group.model';
                       placeholder="0"
                       class="flex-1 px-2 py-2.5 text-sm focus:outline-none min-w-0 font-medium" />
                   </div>
-                  <!-- Desktop segmented toggle -->
-                  <div class="w-28 flex-shrink-0 hidden sm:flex bg-gray-100 rounded-lg p-0.5">
-                    <button (click)="patchExpense('rationSplitMode', 'equal')"
-                      class="flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-200"
-                      [ngClass]="form().expenses.rationSplitMode === 'equal' ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
-                      Equal
-                    </button>
-                    <button (click)="patchExpense('rationSplitMode', 'daywise')"
-                      class="flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-200"
-                      [ngClass]="form().expenses.rationSplitMode === 'daywise' ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
-                      Daily
-                    </button>
-                  </div>
-                </div>
-                <!-- Mobile toggle (below row, indented) -->
-                <div class="sm:hidden flex gap-1.5 mt-2 pl-11">
-                  <button (click)="patchExpense('rationSplitMode', 'equal')"
-                    class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border"
-                    [ngClass]="form().expenses.rationSplitMode === 'equal' ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-gray-500 border-gray-200'">
-                    ⚖️ Equal
-                  </button>
-                  <button (click)="patchExpense('rationSplitMode', 'daywise')"
-                    class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border"
-                    [ngClass]="form().expenses.rationSplitMode === 'daywise' ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-gray-500 border-gray-200'">
-                    📅 Day-wise
-                  </button>
                 </div>
               </div>
 
               <!-- ── Vegetable Row ── -->
-              <div class="px-4 py-3.5">
+              <div class="border-b border-gray-100 px-4 py-3.5">
                 <div class="flex items-center gap-3">
                   <div class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center text-base flex-shrink-0">🥦</div>
                   <div class="flex-1 min-w-0">
@@ -253,33 +227,32 @@ import { Member, ExpenseConfig } from '../../models/group.model';
                       placeholder="0"
                       class="flex-1 px-2 py-2.5 text-sm focus:outline-none min-w-0 font-medium" />
                   </div>
-                  <!-- Desktop segmented toggle -->
-                  <div class="w-28 flex-shrink-0 hidden sm:flex bg-gray-100 rounded-lg p-0.5">
-                    <button (click)="patchExpense('vegetableSplitMode', 'equal')"
-                      class="flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-200"
-                      [ngClass]="form().expenses.vegetableSplitMode === 'equal' ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
-                      Equal
-                    </button>
-                    <button (click)="patchExpense('vegetableSplitMode', 'daywise')"
-                      class="flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-200"
-                      [ngClass]="form().expenses.vegetableSplitMode === 'daywise' ? 'bg-white text-brand-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
-                      Daily
-                    </button>
-                  </div>
                 </div>
-                <!-- Mobile toggle (below row, indented) -->
-                <div class="sm:hidden flex gap-1.5 mt-2 pl-11">
-                  <button (click)="patchExpense('vegetableSplitMode', 'equal')"
-                    class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border"
-                    [ngClass]="form().expenses.vegetableSplitMode === 'equal' ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-gray-500 border-gray-200'">
-                    ⚖️ Equal
+              </div>
+
+              <!-- ── Ration + Veggie Split Mode ── -->
+              <div class="px-4 py-3.5">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-sm font-semibold text-gray-700">Ration + Veggie split method</span>
+                </div>
+                <!-- Toggle -->
+                <div class="flex gap-2">
+                  <button (click)="patchSplitMode('equal')"
+                    class="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all border"
+                    [ngClass]="form().expenses.splitMode === 'equal' ? 'bg-brand-500 text-white border-brand-500 shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'">
+                    ⚖️ Equal Split
                   </button>
-                  <button (click)="patchExpense('vegetableSplitMode', 'daywise')"
-                    class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all border"
-                    [ngClass]="form().expenses.vegetableSplitMode === 'daywise' ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-gray-500 border-gray-200'">
+                  <button (click)="patchSplitMode('daywise')"
+                    class="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all border"
+                    [ngClass]="form().expenses.splitMode === 'daywise' ? 'bg-brand-500 text-white border-brand-500 shadow-sm' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'">
                     📅 Day-wise
                   </button>
                 </div>
+                <p class="text-xs text-gray-400 mt-2 pl-1">
+                  {{ form().expenses.splitMode === 'equal'
+                    ? 'Total ÷ included members — everyone pays the same'
+                    : 'Total ÷ total days — proportional to days present' }}
+                </p>
               </div>
             </div>
 
@@ -359,21 +332,14 @@ import { Member, ExpenseConfig } from '../../models/group.model';
                   </div>
                 </div>
 
-                <!-- Row 3: Ration + Veggie checkboxes -->
-                <div *ngIf="hasRation() || hasVegetable()" class="flex gap-4">
-                  <label *ngIf="hasRation()" class="flex items-center gap-2 cursor-pointer select-none">
+                <!-- Row 3: Include in Ration+Veggie pool -->
+                <div *ngIf="hasRationOrVeg()">
+                  <label class="flex items-center gap-2 cursor-pointer select-none">
                     <input type="checkbox"
-                      [ngModel]="member.includeRation"
-                      (ngModelChange)="updateMember(member.id, 'includeRation', $event)"
+                      [ngModel]="member.includeRationVeg"
+                      (ngModelChange)="updateMember(member.id, 'includeRationVeg', $event)"
                       class="w-4 h-4 rounded accent-orange-500 cursor-pointer" />
-                    <span class="text-sm text-gray-600 font-medium">🛒 Ration</span>
-                  </label>
-                  <label *ngIf="hasVegetable()" class="flex items-center gap-2 cursor-pointer select-none">
-                    <input type="checkbox"
-                      [ngModel]="member.includeVegetable"
-                      (ngModelChange)="updateMember(member.id, 'includeVegetable', $event)"
-                      class="w-4 h-4 rounded accent-orange-500 cursor-pointer" />
-                    <span class="text-sm text-gray-600 font-medium">🥦 Veggie</span>
+                    <span class="text-sm text-gray-600 font-medium">🛒🥦 Include in Ration &amp; Veggie</span>
                   </label>
                 </div>
 
@@ -412,6 +378,21 @@ import { Member, ExpenseConfig } from '../../models/group.model';
                   <p class="text-emerald-200">Members</p>
                   <p class="font-semibold">{{ form().members.length }}</p>
                 </div>
+              </div>
+            </div>
+
+            <!-- Verification Badge -->
+            <div class="mb-5 anim-fade-up"
+              [ngClass]="result().verificationOk ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'"
+              class="rounded-xl px-4 py-3 flex items-center gap-3">
+              <span class="text-xl">{{ result().verificationOk ? '✅' : '❌' }}</span>
+              <div>
+                <p class="text-sm font-semibold" [ngClass]="result().verificationOk ? 'text-emerald-700' : 'text-red-700'">
+                  {{ result().verificationOk ? 'Verification passed' : 'Verification failed' }}
+                </p>
+                <p class="text-xs" [ngClass]="result().verificationOk ? 'text-emerald-500' : 'text-red-500'">
+                  Sum of all shares = {{ fmt(result().grandTotal) }}
+                </p>
               </div>
             </div>
 
@@ -455,11 +436,10 @@ import { Member, ExpenseConfig } from '../../models/group.model';
                   <thead>
                     <tr class="border-b border-gray-100">
                       <th class="py-3 px-5 text-left text-xs font-semibold text-gray-500">Member</th>
-                      <th class="py-3 px-4 text-right text-xs font-semibold text-gray-500">Rent</th>
-                      <th *ngIf="result().totalRation > 0" class="py-3 px-4 text-right text-xs font-semibold text-gray-500">Ration</th>
-                      <th *ngIf="result().totalVegetable > 0" class="py-3 px-4 text-right text-xs font-semibold text-gray-500">Veggie</th>
-                      <th *ngIf="hasAnyPersonalPaid()" class="py-3 px-4 text-right text-xs font-semibold text-gray-500">Paid</th>
-                      <th class="py-3 px-5 text-right text-xs font-semibold text-gray-700">Net Amount</th>
+                      <th class="py-3 px-4 text-right text-xs font-semibold text-gray-500">🏠 Rent</th>
+                      <th *ngIf="hasRationOrVeg()" class="py-3 px-4 text-right text-xs font-semibold text-gray-500">🛒🥦 Ration+Veg</th>
+                      <th *ngIf="hasAnyPersonalPaid()" class="py-3 px-4 text-right text-xs font-semibold text-gray-500">✅ Paid</th>
+                      <th class="py-3 px-5 text-right text-xs font-semibold text-gray-700">Pay Amount</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -473,26 +453,19 @@ import { Member, ExpenseConfig } from '../../models/group.model';
                         </div>
                       </td>
                       <td class="py-3.5 px-4 text-right text-gray-500 text-xs">{{ fmt(share.rentShare) }}</td>
-                      <td *ngIf="result().totalRation > 0" class="py-3.5 px-4 text-right text-gray-500 text-xs">
-                        {{ share.rationShare > 0 ? fmt(share.rationShare) : '—' }}
-                      </td>
-                      <td *ngIf="result().totalVegetable > 0" class="py-3.5 px-4 text-right text-gray-500 text-xs">
-                        {{ share.vegetableShare > 0 ? fmt(share.vegetableShare) : '—' }}
+                      <td *ngIf="hasRationOrVeg()" class="py-3.5 px-4 text-right text-gray-500 text-xs">
+                        {{ share.rationVegShare > 0 ? fmt(share.rationVegShare) : '—' }}
                       </td>
                       <td *ngIf="hasAnyPersonalPaid()" class="py-3.5 px-4 text-right text-xs font-medium text-emerald-600">
                         {{ share.personalExpensePaid > 0 ? '−' + fmt(share.personalExpensePaid) : '—' }}
                       </td>
                       <td class="py-3.5 px-5 text-right">
                         <div class="flex flex-col items-end">
-                          <span class="font-bold" [ngClass]="share.total < 0 ? 'text-emerald-600' : 'text-brand-600'">
+                          <span class="font-bold text-lg" [ngClass]="share.total < 0 ? 'text-emerald-600' : 'text-brand-600'">
                             {{ fmt(share.total) }}
                           </span>
                           <span class="text-xs mt-0.5" [ngClass]="share.total < 0 ? 'text-emerald-400' : 'text-gray-400'">
                             {{ share.total < 0 ? 'Gets back' : 'Pays' }}
-                          </span>
-                          <span *ngIf="hasDaywiseSplit() && memberDaysMap().get(share.memberId)"
-                            class="text-xs text-gray-400 mt-1 bg-gray-50 border border-gray-100 rounded-md px-1.5 py-0.5">
-                            ≈ {{ fmt(share.subtotal / memberDaysMap().get(share.memberId)!) }}/day
                           </span>
                         </div>
                       </td>
@@ -586,18 +559,9 @@ export class NewGroupComponent {
     return `${new Date(fromDate + 'T00:00:00').toLocaleDateString('en-IN', opts)} – ${new Date(toDate + 'T00:00:00').toLocaleDateString('en-IN', opts)}`;
   });
 
-  readonly memberDaysMap = computed(() =>
-    new Map(this.form().members.map(m => [m.id, m.daysPresent]))
-  );
-
   readonly avgPerMember = computed(() => {
     const count = this.result().shares.length;
     return count > 0 ? this.result().grandTotal / count : 0;
-  });
-
-  readonly hasDaywiseSplit = computed(() => {
-    const e = this.form().expenses;
-    return e.rationSplitMode === 'daywise' || e.vegetableSplitMode === 'daywise';
   });
 
   readonly cycleLabelShort = computed(() => {
@@ -682,6 +646,10 @@ export class NewGroupComponent {
     this.formService.setExpenses({ ...this.form().expenses, [key]: value });
   }
 
+  patchSplitMode(mode: SplitMode): void {
+    this.formService.setExpenses({ ...this.form().expenses, splitMode: mode });
+  }
+
   addMember(): void {
     this.formService.addMember();
     setTimeout(() => {
@@ -696,10 +664,8 @@ export class NewGroupComponent {
 
   removeMember(id: string): void { this.formService.removeMember(id); }
 
-  isDaywise(): boolean { return this.hasDaywiseSplit(); }
-
-  hasRation(): boolean { return this.form().expenses.rationAmount > 0; }
-  hasVegetable(): boolean { return this.form().expenses.vegetableAmount > 0; }
+  isDaywise(): boolean { return this.form().expenses.splitMode === 'daywise'; }
+  hasRationOrVeg(): boolean { return this.form().expenses.rationAmount > 0 || this.form().expenses.vegetableAmount > 0; }
   hasAnyPersonalPaid(): boolean { return this.form().members.some(m => m.personalExpensePaid > 0); }
 
   trackMember(_: number, member: Member): string { return member.id; }

@@ -6,8 +6,7 @@ const defaultExpenses: ExpenseConfig = {
   rentAmount: 0,
   rationAmount: 0,
   vegetableAmount: 0,
-  rationSplitMode: 'equal',
-  vegetableSplitMode: 'equal',
+  splitMode: 'equal',
 };
 
 const defaultState: FormState = {
@@ -43,9 +42,8 @@ export class GroupFormService {
     const newMember: Member = {
       id: nanoid(),
       name: '',
-      daysPresent: 30,
-      includeRation: true,
-      includeVegetable: true,
+      daysPresent: 15,
+      includeRationVeg: true,
       personalExpensePaid: 0,
     };
     this.form.update(f => ({ ...f, members: [...f.members, newMember] }));

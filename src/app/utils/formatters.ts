@@ -1,5 +1,7 @@
 export function formatCurrency(amount: number): string {
-  return '₹' + Math.abs(amount).toLocaleString('en-IN');
+  const abs = Math.abs(amount);
+  const formatted = abs % 1 === 0 ? abs.toLocaleString('en-IN') : abs.toFixed(2);
+  return '₹' + formatted;
 }
 
 export function nanoid(): string {

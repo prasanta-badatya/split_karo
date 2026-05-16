@@ -4,16 +4,14 @@ export interface ExpenseConfig {
   rentAmount: number;
   rationAmount: number;
   vegetableAmount: number;
-  rationSplitMode: SplitMode;
-  vegetableSplitMode: SplitMode;
+  splitMode: SplitMode;
 }
 
 export interface Member {
   id: string;
   name: string;
   daysPresent: number;
-  includeRation: boolean;
-  includeVegetable: boolean;
+  includeRationVeg: boolean;
   personalExpensePaid: number;
 }
 
@@ -21,10 +19,9 @@ export interface MemberShare {
   memberId: string;
   memberName: string;
   rentShare: number;
-  rationShare: number;
-  vegetableShare: number;
+  rationVegShare: number;
   personalExpensePaid: number;
-  subtotal: number;
+  grossTotal: number;
   total: number;
 }
 
@@ -34,6 +31,7 @@ export interface CalculationResult {
   totalRation: number;
   totalVegetable: number;
   grandTotal: number;
+  verificationOk: boolean;
   calculatedAt: string;
 }
 
