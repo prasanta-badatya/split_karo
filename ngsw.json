@@ -1,0 +1,92 @@
+{
+  "configVersion": 1,
+  "timestamp": 1778921854671,
+  "index": "/slipt_karo/index.html",
+  "assetGroups": [
+    {
+      "name": "app-shell",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/slipt_karo/174.051d1fcea523e139.js",
+        "/slipt_karo/212.038f9fb247349100.js",
+        "/slipt_karo/47.946e00e5ffa83e24.js",
+        "/slipt_karo/common.625e4f7c18e3c217.js",
+        "/slipt_karo/favicon.ico",
+        "/slipt_karo/index.html",
+        "/slipt_karo/main.f9d30d630c325022.js",
+        "/slipt_karo/manifest.webmanifest",
+        "/slipt_karo/polyfills.fd3756c76fea0602.js",
+        "/slipt_karo/runtime.feb2644c845ef8b2.js",
+        "/slipt_karo/styles.cbb1df82b0c3d0a6.css"
+      ],
+      "patterns": []
+    },
+    {
+      "name": "assets",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/slipt_karo/assets/icons/icon-maskable.svg",
+        "/slipt_karo/assets/icons/icon.svg"
+      ],
+      "patterns": []
+    }
+  ],
+  "dataGroups": [
+    {
+      "name": "google-fonts",
+      "patterns": [
+        "https:\\/\\/fonts\\.googleapis\\.com\\/.*",
+        "https:\\/\\/fonts\\.gstatic\\.com\\/.*"
+      ],
+      "strategy": "performance",
+      "maxSize": 20,
+      "maxAge": 2592000000,
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "version": 1
+    }
+  ],
+  "hashTable": {
+    "/slipt_karo/174.051d1fcea523e139.js": "83ce3e04aa8c93ed02210c126fd584638a9ebd48",
+    "/slipt_karo/212.038f9fb247349100.js": "91212658df34884088961797fbd5b511e7b6ebe2",
+    "/slipt_karo/47.946e00e5ffa83e24.js": "752bb3a9705b24eaa1e27642bd2df11681c047bc",
+    "/slipt_karo/assets/icons/icon-maskable.svg": "68656076ff62fc6dfafeb3f7e7f5c05d186b118e",
+    "/slipt_karo/assets/icons/icon.svg": "3303576ca4f608abc27dc05bb07d1a4d59c8169f",
+    "/slipt_karo/common.625e4f7c18e3c217.js": "86a69f4ab534732a2198edb5a0c6d920414a0e00",
+    "/slipt_karo/favicon.ico": "22f6a4a3bcaafafb0254e0f2fa4ceb89e505e8b2",
+    "/slipt_karo/index.html": "087b19784939eeabe96d1c70327d0e3b9e91b93e",
+    "/slipt_karo/main.f9d30d630c325022.js": "e6ea6ddb8efeba4413b290db68a6524e3d4225b4",
+    "/slipt_karo/manifest.webmanifest": "f19a7adb7a32c5ac2ebdef60e9c97fe9a5d44e62",
+    "/slipt_karo/polyfills.fd3756c76fea0602.js": "6b3410ff33815de6959f125856b7cd4d6b4f8441",
+    "/slipt_karo/runtime.feb2644c845ef8b2.js": "7e2865ee45658f480ad73094f80e64b909a998b7",
+    "/slipt_karo/styles.cbb1df82b0c3d0a6.css": "46d811fe0d3ded828aa80f8cb2dfe5a7393bc555"
+  },
+  "navigationUrls": [
+    {
+      "positive": true,
+      "regex": "^\\/.*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*\\.[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*\\/.*$"
+    }
+  ],
+  "navigationRequestStrategy": "performance"
+}

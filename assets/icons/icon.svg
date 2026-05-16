@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#4338ca"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background (rounded for non-maskable, full bleed for maskable) -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+
+  <!-- Receipt card -->
+  <rect x="136" y="88" width="240" height="288" rx="18" fill="white" fill-opacity="0.97"/>
+
+  <!-- Receipt header bar -->
+  <rect x="136" y="88" width="240" height="52" rx="18" fill="#6366f1"/>
+  <rect x="136" y="116" width="240" height="24" fill="#6366f1"/>
+
+  <!-- Header text placeholder: ₹ -->
+  <text x="256" y="122" text-anchor="middle" fill="white"
+    font-size="28" font-weight="800" font-family="system-ui,sans-serif">Split Karo</text>
+
+  <!-- Item rows -->
+  <rect x="160" y="164" width="88" height="10" rx="5" fill="#e0e7ff"/>
+  <rect x="300" y="164" width="52" height="10" rx="5" fill="#818cf8"/>
+
+  <rect x="160" y="190" width="70" height="10" rx="5" fill="#e0e7ff"/>
+  <rect x="300" y="190" width="52" height="10" rx="5" fill="#818cf8"/>
+
+  <rect x="160" y="216" width="100" height="10" rx="5" fill="#e0e7ff"/>
+  <rect x="300" y="216" width="52" height="10" rx="5" fill="#818cf8"/>
+
+  <!-- Dashed divider -->
+  <line x1="148" y1="244" x2="364" y2="244"
+    stroke="#c7d2fe" stroke-width="3" stroke-dasharray="10 7"/>
+
+  <!-- Total row -->
+  <rect x="148" y="256" width="216" height="36" rx="8" fill="#eef2ff"/>
+  <text x="166" y="279" fill="#6366f1"
+    font-size="14" font-weight="700" font-family="system-ui,sans-serif">Total</text>
+  <text x="348" y="279" text-anchor="end" fill="#4338ca"
+    font-size="14" font-weight="800" font-family="system-ui,sans-serif">₹4,800</text>
+
+  <!-- Zigzag tear at bottom of receipt -->
+  <path d="M136 340 l15-14 l15 14 l15-14 l15 14 l15-14 l15 14 l15-14 l15 14 l15-14 l15 14 l15-14 l15 14 l15-14 l15 14"
+    fill="none" stroke="white" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Three member avatars -->
+  <circle cx="196" cy="412" r="38" fill="white" fill-opacity="0.18"/>
+  <circle cx="256" cy="412" r="38" fill="white" fill-opacity="0.18"/>
+  <circle cx="316" cy="412" r="38" fill="white" fill-opacity="0.18"/>
+
+  <text x="196" y="420" text-anchor="middle" fill="white"
+    font-size="26" font-weight="700" font-family="system-ui,sans-serif">R</text>
+  <text x="256" y="420" text-anchor="middle" fill="white"
+    font-size="26" font-weight="700" font-family="system-ui,sans-serif">P</text>
+  <text x="316" y="420" text-anchor="middle" fill="white"
+    font-size="26" font-weight="700" font-family="system-ui,sans-serif">A</text>
+
+  <!-- Divide symbol between avatars -->
+  <text x="226" y="418" text-anchor="middle" fill="white"
+    font-size="18" font-weight="600" font-family="system-ui,sans-serif" fill-opacity="0.7">÷</text>
+  <text x="286" y="418" text-anchor="middle" fill="white"
+    font-size="18" font-weight="600" font-family="system-ui,sans-serif" fill-opacity="0.7">÷</text>
+</svg>
