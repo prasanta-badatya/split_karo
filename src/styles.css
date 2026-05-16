@@ -3,7 +3,24 @@
 @tailwind utilities;
 
 * { box-sizing: border-box; }
-body { background-color: #f9fafb; font-family: 'Segoe UI', sans-serif; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: #f8fafc;
+  font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #111827;
+}
+
 input[type=number] { -moz-appearance: textfield; }
 input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+input[type=checkbox] { accent-color: #6366f1; }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }

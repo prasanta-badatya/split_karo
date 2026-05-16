@@ -10,79 +10,183 @@ import { formatCurrency } from '../../utils/formatters';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="min-h-screen bg-gray-50">
-      <!-- Header -->
-      <div class="bg-brand-500 text-white px-4 py-4 shadow-md flex items-center gap-3">
-        <button (click)="goBack()" class="text-white text-xl font-bold">←</button>
-        <div class="flex-1">
-          <h1 class="text-lg font-bold">{{ group()?.name }}</h1>
-          <p class="text-brand-100 text-xs">{{ group()?.cycleLabel }}</p>
+    <div class="min-h-screen bg-slate-50">
+
+      <!-- Navbar -->
+      <header class="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 h-14 flex items-center gap-3">
+          <button (click)="goBack()"
+            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-500 text-lg flex-shrink-0">
+            ←
+          </button>
+          <div class="flex-1 min-w-0">
+            <h1 class="font-bold text-gray-900 text-sm truncate">{{ group()?.name }}</h1>
+            <p class="text-xs text-gray-400 truncate">{{ group()?.cycleLabel }}</p>
+          </div>
+          <button (click)="share()"
+            class="flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold text-brand-600 border border-brand-200 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+            Share
+          </button>
         </div>
-        <button (click)="share()" class="text-brand-100 text-sm border border-brand-300 px-3 py-1.5 rounded-xl">
-          Share
-        </button>
+      </header>
+
+      <!-- Not Found -->
+      <div *ngIf="!group()" class="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+        <div class="text-4xl mb-4">🔍</div>
+        <h2 class="font-bold text-gray-700 text-lg">Group not found</h2>
+        <p class="text-gray-400 text-sm mt-1">This group may have been deleted.</p>
+        <button (click)="goBack()" class="mt-5 text-brand-600 font-semibold text-sm hover:underline">← Go Back</button>
       </div>
 
-      <div *ngIf="group() as g" class="max-w-2xl mx-auto px-4 py-6">
-        <!-- Summary Banner -->
-        <div class="bg-brand-500 text-white rounded-2xl p-4 mb-6 shadow">
-          <div class="grid grid-cols-3 gap-3 text-center text-sm mb-3">
-            <div>
-              <p class="text-brand-100 text-xs">Room Rent</p>
-              <p class="font-bold">{{ fmt(g.result.totalRent) }}</p>
+      <!-- Content -->
+      <div *ngIf="group() as g" class="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+
+        <!-- Stat Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-lg">🏠</span>
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Rent</p>
             </div>
-            <div>
-              <p class="text-brand-100 text-xs">Ration</p>
-              <p class="font-bold">{{ fmt(g.result.totalRation) }}</p>
-            </div>
-            <div>
-              <p class="text-brand-100 text-xs">Vegetable</p>
-              <p class="font-bold">{{ fmt(g.result.totalVegetable) }}</p>
-            </div>
+            <p class="text-xl font-bold text-gray-900">{{ fmt(g.result.totalRent) }}</p>
+            <p class="text-xs text-gray-400 mt-0.5">Equal split</p>
           </div>
-          <div class="border-t border-brand-400 pt-3 text-center">
-            <p class="text-brand-100 text-xs">Grand Total</p>
-            <p class="text-2xl font-bold">{{ fmt(g.result.grandTotal) }}</p>
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-lg">🛒</span>
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Ration</p>
+            </div>
+            <p class="text-xl font-bold text-gray-900">{{ fmt(g.result.totalRation) }}</p>
+            <p class="text-xs text-gray-400 mt-0.5">{{ g.expenses.rationSplitMode === 'equal' ? 'Equal split' : 'Day-wise' }}</p>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-lg">🥦</span>
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Vegetable</p>
+            </div>
+            <p class="text-xl font-bold text-gray-900">{{ fmt(g.result.totalVegetable) }}</p>
+            <p class="text-xs text-gray-400 mt-0.5">{{ g.expenses.vegetableSplitMode === 'equal' ? 'Equal split' : 'Day-wise' }}</p>
+          </div>
+          <div class="bg-brand-500 rounded-xl shadow-sm p-4 col-span-2 lg:col-span-1">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-lg">💰</span>
+              <p class="text-xs font-semibold text-brand-200 uppercase tracking-wide">Grand Total</p>
+            </div>
+            <p class="text-2xl font-bold text-white">{{ fmt(g.result.grandTotal) }}</p>
+            <p class="text-xs text-brand-200 mt-0.5">{{ g.members.length }} members</p>
           </div>
         </div>
 
-        <!-- Per Person -->
-        <div class="space-y-3">
-          <div *ngFor="let share of g.result.shares"
-            class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div class="flex justify-between items-center mb-3">
-              <h3 class="font-bold text-gray-800 text-lg">{{ share.memberName }}</h3>
-              <span class="font-bold text-xl"
-                [class.text-brand-500]="share.total >= 0"
-                [class.text-green-600]="share.total < 0">
-                {{ share.total < 0 ? 'Gets back ' : 'Pays ' }}{{ fmt(share.total) }}
-              </span>
+        <!-- Breakdown Panel -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h2 class="font-bold text-gray-900 text-sm">Member Breakdown</h2>
+              <p class="text-xs text-gray-400 mt-0.5">Individual share per expense category</p>
             </div>
-            <div class="text-sm text-gray-500 space-y-1">
-              <div class="flex justify-between">
-                <span>🏠 Room Rent</span><span>{{ fmt(share.rentShare) }}</span>
+            <span class="text-xs bg-gray-100 text-gray-500 px-2.5 py-1 rounded-full font-medium">
+              {{ g.members.length }} members
+            </span>
+          </div>
+
+          <!-- Desktop Table -->
+          <div class="hidden md:block overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-gray-100 bg-gray-50">
+                  <th class="py-3.5 px-5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Member</th>
+                  <th class="py-3.5 px-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Rent Share</th>
+                  <th *ngIf="hasRation(g)" class="py-3.5 px-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Ration</th>
+                  <th *ngIf="hasVegetable(g)" class="py-3.5 px-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Veggie</th>
+                  <th *ngIf="hasPersonalPaid(g)" class="py-3.5 px-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Paid</th>
+                  <th class="py-3.5 px-5 text-right text-xs font-semibold text-gray-700 uppercase tracking-wide">Net Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let share of g.result.shares"
+                  class="border-b border-gray-50 last:border-b-0 hover:bg-gray-50 transition-colors">
+                  <td class="py-4 px-5">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 bg-brand-50 rounded-lg flex items-center justify-center text-xs font-bold text-brand-600 flex-shrink-0">
+                        {{ share.memberName.slice(0,2).toUpperCase() }}
+                      </div>
+                      <span class="font-semibold text-gray-900">{{ share.memberName }}</span>
+                    </div>
+                  </td>
+                  <td class="py-4 px-4 text-right text-gray-500 text-xs font-medium">{{ fmt(share.rentShare) }}</td>
+                  <td *ngIf="hasRation(g)" class="py-4 px-4 text-right text-gray-500 text-xs font-medium">
+                    {{ share.rationShare > 0 ? fmt(share.rationShare) : '—' }}
+                  </td>
+                  <td *ngIf="hasVegetable(g)" class="py-4 px-4 text-right text-gray-500 text-xs font-medium">
+                    {{ share.vegetableShare > 0 ? fmt(share.vegetableShare) : '—' }}
+                  </td>
+                  <td *ngIf="hasPersonalPaid(g)" class="py-4 px-4 text-right text-xs font-medium text-emerald-600">
+                    {{ share.personalExpensePaid > 0 ? '−' + fmt(share.personalExpensePaid) : '—' }}
+                  </td>
+                  <td class="py-4 px-5 text-right">
+                    <div class="flex flex-col items-end">
+                      <span class="font-bold" [ngClass]="share.total < 0 ? 'text-emerald-600' : 'text-brand-600'">
+                        {{ fmt(share.total) }}
+                      </span>
+                      <span class="text-xs mt-0.5" [ngClass]="share.total < 0 ? 'text-emerald-400' : 'text-gray-400'">
+                        {{ share.total < 0 ? 'Gets back' : 'Pays' }}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile Breakdown Cards -->
+          <div class="md:hidden divide-y divide-gray-50">
+            <div *ngFor="let share of g.result.shares" class="p-4">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-brand-50 rounded-xl flex items-center justify-center text-xs font-bold text-brand-600">
+                    {{ share.memberName.slice(0,2).toUpperCase() }}
+                  </div>
+                  <span class="font-bold text-gray-900">{{ share.memberName }}</span>
+                </div>
+                <div class="text-right">
+                  <p class="font-bold" [ngClass]="share.total < 0 ? 'text-emerald-600' : 'text-brand-600'">
+                    {{ fmt(share.total) }}
+                  </p>
+                  <p class="text-xs mt-0.5" [ngClass]="share.total < 0 ? 'text-emerald-400' : 'text-gray-400'">
+                    {{ share.total < 0 ? 'Gets back' : 'Pays' }}
+                  </p>
+                </div>
               </div>
-              <div *ngIf="share.rationShare > 0" class="flex justify-between">
-                <span>🛒 Ration</span><span>{{ fmt(share.rationShare) }}</span>
-              </div>
-              <div *ngIf="share.vegetableShare > 0" class="flex justify-between">
-                <span>🥦 Vegetable</span><span>{{ fmt(share.vegetableShare) }}</span>
-              </div>
-              <div *ngIf="share.personalExpensePaid > 0" class="flex justify-between text-green-600">
-                <span>✅ Already Paid</span><span>− {{ fmt(share.personalExpensePaid) }}</span>
-              </div>
-              <div class="border-t border-gray-100 pt-1 flex justify-between font-semibold text-gray-700">
-                <span>Total</span>
-                <span [class.text-red-500]="share.total < 0">{{ fmt(share.total) }}</span>
+              <div class="bg-gray-50 rounded-xl p-3 space-y-1.5 text-xs">
+                <div class="flex justify-between text-gray-500">
+                  <span>🏠 Rent</span>
+                  <span class="font-medium text-gray-700">{{ fmt(share.rentShare) }}</span>
+                </div>
+                <div *ngIf="share.rationShare > 0" class="flex justify-between text-gray-500">
+                  <span>🛒 Ration</span>
+                  <span class="font-medium text-gray-700">{{ fmt(share.rationShare) }}</span>
+                </div>
+                <div *ngIf="share.vegetableShare > 0" class="flex justify-between text-gray-500">
+                  <span>🥦 Vegetable</span>
+                  <span class="font-medium text-gray-700">{{ fmt(share.vegetableShare) }}</span>
+                </div>
+                <div *ngIf="share.personalExpensePaid > 0" class="flex justify-between text-emerald-600">
+                  <span>✅ Already Paid</span>
+                  <span class="font-medium">−{{ fmt(share.personalExpensePaid) }}</span>
+                </div>
+                <div class="border-t border-gray-200 pt-1.5 flex justify-between font-semibold">
+                  <span class="text-gray-600">Net</span>
+                  <span [ngClass]="share.total < 0 ? 'text-emerald-600' : 'text-brand-600'">{{ fmt(share.total) }}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div *ngIf="!group()" class="text-center py-20 text-gray-400">
-        <p>Group not found.</p>
-        <button (click)="goBack()" class="mt-4 text-brand-500 underline">Go back</button>
+        </div>
       </div>
     </div>
   `
@@ -100,15 +204,17 @@ export class GroupDetailComponent implements OnInit {
     this.group.set(this.groupService.getGroup(id));
   }
 
-  goBack(): void {
-    this.router.navigate(['/']);
-  }
+  hasRation(g: Group): boolean { return g.result.totalRation > 0; }
+  hasVegetable(g: Group): boolean { return g.result.totalVegetable > 0; }
+  hasPersonalPaid(g: Group): boolean { return g.result.shares.some(s => s.personalExpensePaid > 0); }
+
+  goBack(): void { this.router.navigate(['/']); }
 
   share(): void {
     const g = this.group();
     if (!g) return;
     const lines = [
-      `*Split Karo - ${g.name}*`,
+      `*Split Karo – ${g.name}*`,
       `Period: ${g.cycleLabel}`,
       ``,
       `Expenses:`,
@@ -122,7 +228,7 @@ export class GroupDetailComponent implements OnInit {
         `  ${s.memberName}: ${s.total < 0 ? 'Gets ₹' + Math.abs(s.total) : 'Pays ₹' + s.total}`
       ),
       ``,
-      `Generated by Split Karo`
+      `Generated by Split Karo`,
     ];
     const text = lines.join('\n');
     if (navigator.share) {
