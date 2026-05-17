@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GroupService } from '../../services/group.service';
+import { ImageShareService } from '../../services/image-share.service';
 import { Group } from '../../models/group.model';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -23,13 +24,17 @@ import { formatCurrency } from '../../utils/formatters';
             <h1 class="font-bold text-gray-900 text-sm truncate">{{ group()?.name }}</h1>
             <p class="text-xs text-gray-400 truncate">{{ group()?.cycleLabel }}</p>
           </div>
-          <button (click)="share()"
-            class="flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold text-brand-600 border border-brand-200 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <button (click)="shareImage()" [disabled]="isSharing()"
+            class="flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold text-brand-600 border border-brand-200 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+            <svg *ngIf="!isSharing()" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round"
                 d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
-            Share
+            <svg *ngIf="isSharing()" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            </svg>
+            {{ isSharing() ? 'Generating…' : 'Share' }}
           </button>
         </div>
       </header>
@@ -91,6 +96,23 @@ import { formatCurrency } from '../../utils/formatters';
             </div>
             <p class="text-2xl font-bold text-white">{{ fmt(g.result.grandTotal) }}</p>
             <p class="text-xs text-brand-200 mt-0.5">{{ g.members.length }} members</p>
+          </div>
+        </div>
+
+        <!-- Average Info Bar -->
+        <div class="mb-4 bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3">
+          <span class="text-xl flex-shrink-0">📊</span>
+          <div *ngIf="g.expenses.splitMode === 'daywise'">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Daily Average (Ration + Veggie)</p>
+            <p class="text-base font-bold text-brand-600 mt-0.5">
+              {{ fmt(dailyAvg(g)) }} <span class="text-xs font-normal text-gray-400">per day</span>
+            </p>
+          </div>
+          <div *ngIf="g.expenses.splitMode === 'equal'">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Per Person Average</p>
+            <p class="text-base font-bold text-brand-600 mt-0.5">
+              {{ fmt(perPersonAvg(g)) }} <span class="text-xs font-normal text-gray-400">per member (Rent + Ration + Veggie)</span>
+            </p>
           </div>
         </div>
 
@@ -204,8 +226,10 @@ export class GroupDetailComponent implements OnInit {
   private router       = inject(Router);
   private groupService = inject(GroupService);
 
-  readonly fmt   = formatCurrency;
-  readonly group = signal<Group | undefined>(undefined);
+  readonly fmt        = formatCurrency;
+  readonly group      = signal<Group | undefined>(undefined);
+  readonly isSharing  = signal(false);
+  private imageShare  = inject(ImageShareService);
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id') ?? '';
@@ -216,7 +240,30 @@ export class GroupDetailComponent implements OnInit {
   hasRationOrVeg(g: Group): boolean { return g.result.totalRation > 0 || g.result.totalVegetable > 0; }
   hasPersonalPaid(g: Group): boolean { return g.result.shares.some(s => s.personalExpensePaid > 0); }
 
+  dailyAvg(g: Group): number {
+    const pool = g.result.totalRation + g.result.totalVegetable;
+    const totalDays = g.members
+      .filter(m => m.includeRationVeg)
+      .reduce((s, m) => s + m.daysPresent, 0);
+    return totalDays > 0 ? pool / totalDays : 0;
+  }
+
+  perPersonAvg(g: Group): number {
+    return g.members.length > 0 ? g.result.grandTotal / g.members.length : 0;
+  }
+
   goBack(): void { this.router.navigate(['/']); }
+
+  async shareImage(): Promise<void> {
+    const g = this.group();
+    if (!g || this.isSharing()) return;
+    this.isSharing.set(true);
+    try {
+      await this.imageShare.shareImage(g);
+    } finally {
+      this.isSharing.set(false);
+    }
+  }
 
   share(): void {
     const g = this.group();

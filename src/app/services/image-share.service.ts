@@ -34,7 +34,8 @@ export class ImageShareService {
     this.drawHeader(ctx, g, W);
     const afterExpenses = this.drawExpenseSection(ctx, g, W);
     this.drawDivider(ctx, W, afterExpenses);
-    this.drawMemberSection(ctx, g, W, afterExpenses + 24);
+    const afterMembers = this.drawMemberSection(ctx, g, W, afterExpenses + 24);
+    this.drawVerification(ctx, g, W, afterMembers + 12);
     this.drawFooter(ctx, W, H);
 
     return this.canvasToBlob(canvas);
@@ -66,15 +67,19 @@ export class ImageShareService {
     const expenseRows = 1
       + (g.result.totalRation    > 0 ? 1 : 0)
       + (g.result.totalVegetable > 0 ? 1 : 0);
+    const hasPaid = g.result.shares.some(s => s.personalExpensePaid > 0);
+    const rowH = 68 + (hasPaid ? 16 : 0);
     return (
       120                              // header
       + 20                             // gap below header
       + 28                             // "EXPENSES" label
       + expenseRows * 36               // expense rows
       + 44                             // grand total row
+      + 36                             // average line
       + 32                             // dashed divider + gap
       + 28                             // "MEMBERS" label
-      + g.result.shares.length * 60    // member rows
+      + g.result.shares.length * rowH  // member rows
+      + 40                             // verification row
       + 48                             // footer
     );
   }
@@ -193,7 +198,32 @@ export class ImageShareService {
     ctx.textAlign = 'right';
     ctx.fillText(this.rupee(g.result.grandTotal), w - 40, y + 12);
 
-    return y + 44;
+    // Average line
+    const avgY = y + 44 + 20;
+    const daywise = g.expenses.splitMode === 'daywise';
+    let avgLabel: string;
+    let avgValue: number;
+    if (daywise) {
+      const pool = g.result.totalRation + g.result.totalVegetable;
+      const totalDays = g.members
+        .filter(m => m.includeRationVeg)
+        .reduce((s, m) => s + m.daysPresent, 0);
+      avgValue = totalDays > 0 ? pool / totalDays : 0;
+      avgLabel = 'Daily Avg (Ration + Veggie)';
+    } else {
+      avgValue = g.members.length > 0 ? g.result.grandTotal / g.members.length : 0;
+      avgLabel = 'Per Person Avg (All)';
+    }
+    ctx.font      = '13px Inter, system-ui, sans-serif';
+    ctx.fillStyle = C.GRAY_400;
+    ctx.textAlign = 'left';
+    ctx.fillText(avgLabel, 40, avgY);
+    ctx.font      = '600 13px Inter, system-ui, sans-serif';
+    ctx.fillStyle = C.GRAY_700;
+    ctx.textAlign = 'right';
+    ctx.fillText(this.rupee(avgValue) + (daywise ? '/day' : '/member'), w - 40, avgY);
+
+    return y + 80;
   }
 
   private drawDivider(ctx: CanvasRenderingContext2D, w: number, y: number): void {
@@ -213,7 +243,10 @@ export class ImageShareService {
     g: Group,
     w: number,
     startY: number,
-  ): void {
+  ): number {
+    const daywise = g.expenses.splitMode === 'daywise';
+    const hasPaid = g.result.shares.some(s => s.personalExpensePaid > 0);
+    const rowH = 68 + (hasPaid ? 16 : 0);
     let y = startY + 8;
 
     // Section label
@@ -227,53 +260,96 @@ export class ImageShareService {
     const shares = g.result.shares;
     for (let i = 0; i < shares.length; i++) {
       const share  = shares[i];
-      const midY   = y + 30;
-      const isDebt = share.total >= 0; // Pays
+      const isDebt = share.total >= 0;
 
       // Avatar circle
+      const avatarY = y + 28;
       ctx.beginPath();
-      ctx.arc(56, midY, 22, 0, Math.PI * 2);
+      ctx.arc(56, avatarY, 22, 0, Math.PI * 2);
       ctx.fillStyle = C.BRAND_50;
       ctx.fill();
-
       ctx.font         = 'bold 13px Inter, system-ui, sans-serif';
       ctx.fillStyle    = C.BRAND_600;
       ctx.textAlign    = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(share.memberName.slice(0, 2).toUpperCase(), 56, midY);
+      ctx.fillText(share.memberName.slice(0, 2).toUpperCase(), 56, avatarY);
 
       // Member name
       ctx.font         = '600 15px Inter, system-ui, sans-serif';
       ctx.fillStyle    = C.GRAY_900;
       ctx.textAlign    = 'left';
       ctx.textBaseline = 'alphabetic';
-      ctx.fillText(this.truncate(ctx, share.memberName, w - 40 - 90 - 140), 90, midY - 6);
+      ctx.fillText(this.truncate(ctx, share.memberName, w - 40 - 90 - 160), 90, y + 18);
 
-      // Status label
-      ctx.font      = '12px Inter, system-ui, sans-serif';
+      // Sub-line: chips (days · paid · status)
+      let chipX = 90;
+      const chipY = y + 36;
+      ctx.font      = '11px Inter, system-ui, sans-serif';
+
+      if (daywise) {
+        ctx.fillStyle = C.BRAND_500;
+        ctx.fillText(`${share.daysPresent}d`, chipX, chipY);
+        chipX += ctx.measureText(`${share.daysPresent}d`).width + 10;
+        ctx.fillStyle = C.GRAY_200;
+        ctx.fillText('·', chipX - 6, chipY);
+      }
+
+      if (share.personalExpensePaid > 0) {
+        ctx.fillStyle = '#059669';
+        ctx.fillText(`Paid ${this.rupee(share.personalExpensePaid)}`, chipX, chipY);
+        chipX += ctx.measureText(`Paid ${this.rupee(share.personalExpensePaid)}`).width + 10;
+        ctx.fillStyle = C.GRAY_200;
+        ctx.fillText('·', chipX - 6, chipY);
+      }
+
       ctx.fillStyle = isDebt ? C.GRAY_400 : C.SUCCESS;
-      ctx.fillText(isDebt ? 'Pays' : 'Gets back', 90, midY + 12);
+      ctx.fillText(isDebt ? 'Pays' : 'Gets back', chipX, chipY);
 
-      // Net amount
-      ctx.font      = 'bold 17px Inter, system-ui, sans-serif';
-      ctx.fillStyle = isDebt ? C.BRAND_600 : C.SUCCESS;
-      ctx.textAlign = 'right';
+      // Net pay amount (right side)
+      ctx.font         = 'bold 18px Inter, system-ui, sans-serif';
+      ctx.fillStyle    = isDebt ? C.BRAND_600 : C.SUCCESS;
+      ctx.textAlign    = 'right';
       ctx.textBaseline = 'middle';
-      ctx.fillText(this.rupee(share.total), w - 40, midY);
+      ctx.fillText(this.rupee(share.total), w - 40, y + 28);
 
-      // Row separator (skip last)
+      // Row separator
       if (i < shares.length - 1) {
         ctx.strokeStyle = C.GRAY_100;
         ctx.lineWidth   = 1;
         ctx.setLineDash([]);
         ctx.beginPath();
-        ctx.moveTo(90, y + 60);
-        ctx.lineTo(w - 40, y + 60);
+        ctx.moveTo(90, y + rowH);
+        ctx.lineTo(w - 40, y + rowH);
         ctx.stroke();
       }
 
-      y += 60;
+      y += rowH;
     }
+    return y;
+  }
+
+  private drawVerification(
+    ctx: CanvasRenderingContext2D,
+    g: Group,
+    w: number,
+    y: number,
+  ): void {
+    const ok = g.result.verificationOk;
+    const bg = ok ? '#d1fae5' : '#fee2e2';
+    const fg = ok ? '#065f46' : '#991b1b';
+
+    this.roundRect(ctx, 40, y, w - 80, 28, 8);
+    ctx.fillStyle = bg;
+    ctx.fill();
+
+    ctx.font         = '600 12px Inter, system-ui, sans-serif';
+    ctx.fillStyle    = fg;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    const label = ok
+      ? `✓ Verification passed — total = ${this.rupee(g.result.grandTotal)}`
+      : `✗ Verification failed`;
+    ctx.fillText(label, w / 2, y + 14);
   }
 
   private drawFooter(ctx: CanvasRenderingContext2D, w: number, h: number): void {
