@@ -277,8 +277,19 @@ export class GroupDetailComponent implements OnInit {
     const text = lines.join('\n');
     if (navigator.share) {
       navigator.share({ text });
-    } else {
+    } else if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(text).then(() => alert('Copied to clipboard!'));
+    } else {
+      // Fallback for HTTP / older browsers
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      alert('Copied to clipboard!');
     }
   }
 }
