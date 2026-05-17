@@ -35,6 +35,7 @@ export function calculateShares(expenses: ExpenseConfig, members: Member[]): Cal
     return {
       memberId: m.id,
       memberName: m.name,
+      daysPresent: m.daysPresent,
       rentShare,
       rationVegShare: rv,
       personalExpensePaid: m.personalExpensePaid,

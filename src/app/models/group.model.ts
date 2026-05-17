@@ -18,6 +18,7 @@ export interface Member {
 export interface MemberShare {
   memberId: string;
   memberName: string;
+  daysPresent: number;
   rentShare: number;
   rationVegShare: number;
   personalExpensePaid: number;

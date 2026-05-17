@@ -436,6 +436,7 @@ import { Member, ExpenseConfig, SplitMode } from '../../models/group.model';
                   <thead>
                     <tr class="border-b border-gray-100">
                       <th class="py-3 px-5 text-left text-xs font-semibold text-gray-500">Member</th>
+                      <th *ngIf="isDaywise()" class="py-3 px-4 text-center text-xs font-semibold text-gray-500">📅 Days</th>
                       <th class="py-3 px-4 text-right text-xs font-semibold text-gray-500">🏠 Rent</th>
                       <th *ngIf="hasRationOrVeg()" class="py-3 px-4 text-right text-xs font-semibold text-gray-500">🛒🥦 Ration+Veg</th>
                       <th *ngIf="hasAnyPersonalPaid()" class="py-3 px-4 text-right text-xs font-semibold text-gray-500">✅ Paid</th>
@@ -451,6 +452,9 @@ import { Member, ExpenseConfig, SplitMode } from '../../models/group.model';
                           </div>
                           <span class="font-semibold text-gray-900">{{ share.memberName }}</span>
                         </div>
+                      </td>
+                      <td *ngIf="isDaywise()" class="py-3.5 px-4 text-center text-gray-700 text-xs font-semibold">
+                        {{ share.daysPresent }}d
                       </td>
                       <td class="py-3.5 px-4 text-right text-gray-500 text-xs">{{ fmt(share.rentShare) }}</td>
                       <td *ngIf="hasRationOrVeg()" class="py-3.5 px-4 text-right text-gray-500 text-xs">
