@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://prasanta-badatya.github.io/split_karo/sitemap.xml
