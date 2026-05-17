@@ -2,9 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Split Karo</title>
-  <base href="/">
+  <title>Split Karo — Expense Splitter for Roommates</title>
+  <base href="/split_karo/">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <!-- Primary SEO -->
+  <meta name="description" content="Split Karo helps roommates and bachelors split rent, ration, and vegetable bills fairly — equal or day-wise. Free, offline-ready web app. No sign-up needed.">
+  <meta name="keywords" content="expense splitter, roommate bill splitter, rent split app, ration split, split karo, bachelor expense tracker, bill sharing app india">
+  <meta name="author" content="Prasanta Badatya">
+  <link rel="canonical" href="https://prasanta-badatya.github.io/split_karo/">
+
+  <!-- Open Graph (WhatsApp, Facebook) -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://prasanta-badatya.github.io/split_karo/">
+  <meta property="og:title" content="Split Karo — Expense Splitter for Roommates">
+  <meta property="og:description" content="Split rent, ration, and vegetable bills fairly among roommates. Equal or day-wise split. Free, no sign-up, works offline.">
+  <meta property="og:image" content="https://prasanta-badatya.github.io/split_karo/assets/icons/icon.svg">
+  <meta property="og:locale" content="en_IN">
+  <meta property="og:site_name" content="Split Karo">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Split Karo — Expense Splitter for Roommates">
+  <meta name="twitter:description" content="Split rent, ration, and vegetable bills fairly among roommates. Free, no sign-up, works offline.">
+  <meta name="twitter:image" content="https://prasanta-badatya.github.io/split_karo/assets/icons/icon.svg">
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.webmanifest">
@@ -19,7 +40,40 @@
   <!-- Android / general -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="application-name" content="Split Karo">
-  <meta name="description" content="Split bills stress-free with your roommates">
+
+  <!-- JSON-LD structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Split Karo",
+    "url": "https://prasanta-badatya.github.io/split_karo/",
+    "description": "Split Karo helps roommates split rent, ration, and vegetable expenses fairly using equal or day-wise calculation. Free, offline-ready, no sign-up needed.",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "INR"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "Prasanta Badatya"
+    }
+  }
+  </script>
+
+  <!-- GitHub Pages SPA: restore path encoded by 404.html -->
+  <script>
+    (function (l) {
+      if (l.search.indexOf('?p=/') === 0) {
+        var path = l.search.slice(4).split('&q=');
+        var url  = l.pathname.replace(/\/$/, '') + '/' + path[0].replace(/~and~/g, '&');
+        if (path[1]) url += '?' + path[1].replace(/~and~/g, '&');
+        window.history.replaceState(null, null, url + l.hash);
+      }
+    }(window.location));
+  </script>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
