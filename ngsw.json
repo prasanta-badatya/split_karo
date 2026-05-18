@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1779038879811,
+  "timestamp": 1779078494590,
   "index": "/split_karo/index.html",
   "assetGroups": [
     {
@@ -20,7 +20,7 @@
         "/split_karo/main.58697db2fe66018e.js",
         "/split_karo/manifest.webmanifest",
         "/split_karo/polyfills.fd3756c76fea0602.js",
-        "/split_karo/runtime.5cdf0e535825c96e.js",
+        "/split_karo/runtime.d9c6aa12a3a23dda.js",
         "/split_karo/styles.b23f1c8c0595c664.css"
       ],
       "patterns": []
@@ -60,14 +60,14 @@
     "/split_karo/212.b2592a1955dc6202.js": "11ab9b77f3ef82976e32843365192993a987c8cc",
     "/split_karo/47.93fc53be8c47dab6.js": "4621c23063b60f63be4856a1c5438ab32fee801c",
     "/split_karo/800.65f455d13f3fc206.js": "2015677f0b54f0fdde735e3211f4c8ed0ffe9072",
-    "/split_karo/assets/icons/icon-maskable.svg": "1e1d4a469705c1bfda495d11ea868fd07875ee72",
-    "/split_karo/assets/icons/icon.svg": "011d186ed9dd9c0850faa9a284200631f8b25dc5",
+    "/split_karo/assets/icons/icon-maskable.svg": "68656076ff62fc6dfafeb3f7e7f5c05d186b118e",
+    "/split_karo/assets/icons/icon.svg": "3303576ca4f608abc27dc05bb07d1a4d59c8169f",
     "/split_karo/favicon.ico": "22f6a4a3bcaafafb0254e0f2fa4ceb89e505e8b2",
-    "/split_karo/index.html": "2a7b49828c671f62cfa687561220a647ba6732b7",
+    "/split_karo/index.html": "b2099efc5845b04fc714ad5e03b414f8526c2dfd",
     "/split_karo/main.58697db2fe66018e.js": "65fa8f4d91fe07ff44b9bc906979208f65e5a54d",
-    "/split_karo/manifest.webmanifest": "8356db6513ec809a7361e08dd6f832ca4fd17c45",
+    "/split_karo/manifest.webmanifest": "e4ef066f17af80887e21a76ddeb08efb4c920334",
     "/split_karo/polyfills.fd3756c76fea0602.js": "6b3410ff33815de6959f125856b7cd4d6b4f8441",
-    "/split_karo/runtime.5cdf0e535825c96e.js": "b649a5272fe13f2d25409e47faeeebaa6e5978fc",
+    "/split_karo/runtime.d9c6aa12a3a23dda.js": "58de8687d340465e36340ca8a3b7a910fc783af1",
     "/split_karo/styles.b23f1c8c0595c664.css": "5edee85405182d399b733e9e604bec50016c4d2b"
   },
   "navigationUrls": [
