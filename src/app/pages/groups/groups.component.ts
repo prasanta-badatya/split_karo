@@ -2,6 +2,7 @@ import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { GroupService } from '../../services/group.service';
+import { Group } from '../../models/group.model';
 import { formatCurrency } from '../../utils/formatters';
 
 @Component({
@@ -83,12 +84,12 @@ import { formatCurrency } from '../../utils/formatters';
               <table class="w-full text-sm">
                 <thead>
                   <tr class="border-b border-gray-100 bg-gray-50">
-                    <th class="py-3.5 px-5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Group Name</th>
+                    <th class="py-3.5 px-5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Group</th>
                     <th class="py-3.5 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Period</th>
-                    <th class="py-3.5 px-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Members</th>
-                    <th class="py-3.5 px-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Rent</th>
-                    <th class="py-3.5 px-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Ration</th>
-                    <th class="py-3.5 px-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Vegetable</th>
+                    <th class="py-3.5 px-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Split</th>
+                    <th class="py-3.5 px-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Verify</th>
+                    <th class="py-3.5 px-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Paid</th>
+                    <th class="py-3.5 px-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Avg / Person</th>
                     <th class="py-3.5 px-4 text-right text-xs font-semibold text-gray-900 uppercase tracking-wide">Grand Total</th>
                     <th class="py-3.5 px-5 w-20"></th>
                   </tr>
@@ -97,24 +98,69 @@ import { formatCurrency } from '../../utils/formatters';
                   <tr *ngFor="let group of groups()"
                     (click)="viewGroup(group.id)"
                     class="border-b border-gray-50 last:border-b-0 hover:bg-brand-50 cursor-pointer transition-colors group/row">
+
+                    <!-- Group Name -->
                     <td class="py-4 px-5">
                       <div class="flex items-center gap-3">
                         <div class="w-8 h-8 bg-brand-50 rounded-lg flex items-center justify-center text-xs font-bold text-brand-600 flex-shrink-0">
                           {{ group.name.slice(0,2).toUpperCase() }}
                         </div>
-                        <span class="font-semibold text-gray-900 group-hover/row:text-brand-600 transition-colors">{{ group.name }}</span>
+                        <div>
+                          <p class="font-semibold text-gray-900 group-hover/row:text-brand-600 transition-colors">{{ group.name }}</p>
+                          <p class="text-xs text-gray-400 mt-0.5">{{ group.members.length }} members</p>
+                        </div>
                       </div>
                     </td>
+
+                    <!-- Period -->
                     <td class="py-4 px-4 text-gray-400 text-xs">{{ group.cycleLabel }}</td>
+
+                    <!-- Split Mode -->
                     <td class="py-4 px-4 text-center">
-                      <span class="inline-flex items-center justify-center w-6 h-6 bg-gray-100 rounded-full text-xs font-semibold text-gray-600">{{ group.members.length }}</span>
+                      <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                        [ngClass]="group.expenses.splitMode === 'daywise'
+                          ? 'bg-indigo-50 text-indigo-600'
+                          : 'bg-brand-50 text-brand-600'">
+                        {{ group.expenses.splitMode === 'daywise' ? '📅 Day-wise' : '⚖️ Equal' }}
+                      </span>
                     </td>
-                    <td class="py-4 px-4 text-right text-gray-500 text-xs font-medium">{{ fmt(group.result.totalRent) }}</td>
-                    <td class="py-4 px-4 text-right text-gray-500 text-xs font-medium">{{ fmt(group.result.totalRation) }}</td>
-                    <td class="py-4 px-4 text-right text-gray-500 text-xs font-medium">{{ fmt(group.result.totalVegetable) }}</td>
+
+                    <!-- Verification -->
+                    <td class="py-4 px-4 text-center">
+                      <span class="text-base" [title]="group.result.verificationOk ? 'Verification passed' : 'Verification failed'">
+                        {{ group.result.verificationOk ? '✅' : '❌' }}
+                      </span>
+                    </td>
+
+                    <!-- Payment Progress -->
+                    <td class="py-4 px-4 text-center">
+                      <div class="flex flex-col items-center gap-1">
+                        <span class="text-xs font-semibold"
+                          [ngClass]="paidCount(group) === owingCount(group) && owingCount(group) > 0
+                            ? 'text-emerald-600' : 'text-gray-600'">
+                          {{ paidCount(group) }} / {{ owingCount(group) }}
+                        </span>
+                        <!-- Progress bar -->
+                        <div class="w-12 h-1 bg-gray-100 rounded-full overflow-hidden">
+                          <div class="h-full rounded-full transition-all"
+                            [ngClass]="paidCount(group) === owingCount(group) && owingCount(group) > 0 ? 'bg-emerald-500' : 'bg-brand-400'"
+                            [style.width]="owingCount(group) > 0 ? (paidCount(group) / owingCount(group) * 100) + '%' : '0%'">
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    <!-- Per-person avg -->
+                    <td class="py-4 px-4 text-right">
+                      <span class="text-xs font-semibold text-gray-700">{{ fmt(perPersonAvg(group)) }}</span>
+                    </td>
+
+                    <!-- Grand Total -->
                     <td class="py-4 px-4 text-right">
                       <span class="font-bold text-brand-600">{{ fmt(group.result.grandTotal) }}</span>
                     </td>
+
+                    <!-- Delete -->
                     <td class="py-4 px-5 text-right">
                       <button (click)="deleteGroup($event, group.id)"
                         class="text-xs font-medium text-gray-300 hover:text-rose-500 transition-colors opacity-0 group-hover/row:opacity-100 px-2 py-1 rounded">
@@ -127,25 +173,63 @@ import { formatCurrency } from '../../utils/formatters';
             </div>
           </div>
 
-          <!-- Mobile List -->
-          <div *ngIf="groups().length > 0" class="md:hidden space-y-2 anim-fade-up anim-d2">
+          <!-- Mobile Cards -->
+          <div *ngIf="groups().length > 0" class="md:hidden space-y-3 anim-fade-up anim-d2">
             <div *ngFor="let group of groups()"
               (click)="viewGroup(group.id)"
-              class="bg-white rounded-xl border border-gray-100 shadow-sm flex items-center gap-3 p-4 cursor-pointer active:bg-gray-50 transition-colors">
-              <div class="w-11 h-11 bg-brand-50 rounded-xl flex-shrink-0 flex items-center justify-center">
-                <span class="text-brand-600 font-bold text-sm">{{ group.name.slice(0,2).toUpperCase() }}</span>
+              class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 cursor-pointer active:bg-gray-50 transition-colors">
+
+              <!-- Top row: avatar + name + total -->
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-11 h-11 bg-brand-50 rounded-xl flex-shrink-0 flex items-center justify-center">
+                  <span class="text-brand-600 font-bold text-sm">{{ group.name.slice(0,2).toUpperCase() }}</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="font-bold text-gray-900 truncate">{{ group.name }}</p>
+                  <p class="text-xs text-gray-400 mt-0.5">{{ group.cycleLabel }}</p>
+                </div>
+                <div class="text-right flex-shrink-0">
+                  <p class="font-bold text-brand-600">{{ fmt(group.result.grandTotal) }}</p>
+                  <p class="text-xs text-gray-400 mt-0.5">{{ fmt(perPersonAvg(group)) }} avg</p>
+                </div>
               </div>
-              <div class="flex-1 min-w-0">
-                <p class="font-semibold text-gray-900 truncate text-sm">{{ group.name }}</p>
-                <p class="text-xs text-gray-400 truncate mt-0.5">{{ group.cycleLabel }} · {{ group.members.length }} members</p>
+
+              <!-- Info chips row -->
+              <div class="flex flex-wrap items-center gap-2 mb-3">
+                <!-- Split mode -->
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                  [ngClass]="group.expenses.splitMode === 'daywise' ? 'bg-indigo-50 text-indigo-600' : 'bg-brand-50 text-brand-600'">
+                  {{ group.expenses.splitMode === 'daywise' ? '📅 Day-wise' : '⚖️ Equal' }}
+                </span>
+                <!-- Verification -->
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                  [ngClass]="group.result.verificationOk ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'">
+                  {{ group.result.verificationOk ? '✅ Verified' : '❌ Failed' }}
+                </span>
+                <!-- Members -->
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
+                  👥 {{ group.members.length }} members
+                </span>
               </div>
-              <div class="text-right flex-shrink-0">
-                <p class="font-bold text-brand-600 text-sm">{{ fmt(group.result.grandTotal) }}</p>
+
+              <!-- Payment progress bar -->
+              <div class="flex items-center gap-2">
+                <div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all"
+                    [ngClass]="paidCount(group) === owingCount(group) && owingCount(group) > 0 ? 'bg-emerald-500' : 'bg-brand-400'"
+                    [style.width]="owingCount(group) > 0 ? (paidCount(group) / owingCount(group) * 100) + '%' : '0%'">
+                  </div>
+                </div>
+                <span class="text-xs font-semibold flex-shrink-0"
+                  [ngClass]="paidCount(group) === owingCount(group) && owingCount(group) > 0 ? 'text-emerald-600' : 'text-gray-500'">
+                  {{ paidCount(group) }}/{{ owingCount(group) }} paid
+                </span>
                 <button (click)="deleteGroup($event, group.id)"
-                  class="text-xs text-gray-300 hover:text-rose-500 transition-colors mt-0.5 block ml-auto">
+                  class="text-xs text-gray-300 hover:text-rose-500 transition-colors ml-1 flex-shrink-0">
                   Delete
                 </button>
               </div>
+
             </div>
           </div>
 
@@ -163,6 +247,18 @@ export class GroupsComponent {
   readonly isLoading    = this.groupService.isLoading;
   readonly totalAmount  = computed(() => this.groups().reduce((s, g) => s + g.result.grandTotal, 0));
   readonly totalMembers = computed(() => this.groups().reduce((s, g) => s + g.members.length, 0));
+
+  owingCount(g: Group): number {
+    return g.result.shares.filter(s => s.total > 0).length;
+  }
+
+  paidCount(g: Group): number {
+    return g.result.shares.filter(s => s.total > 0 && !!(g.paidMembers?.[s.memberId])).length;
+  }
+
+  perPersonAvg(g: Group): number {
+    return g.members.length > 0 ? g.result.grandTotal / g.members.length : 0;
+  }
 
   goHome(): void { this.router.navigate(['/']); }
   goToNew(): void { this.router.navigate(['/new']); }
