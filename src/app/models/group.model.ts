@@ -44,6 +44,7 @@ export interface Group {
   expenses: ExpenseConfig;
   members: Member[];
   result: CalculationResult;
+  paidMembers?: Record<string, boolean>;
 }
 
 export interface FormState {

@@ -46,4 +46,14 @@ export class GroupService {
   getGroup(id: string): Group | undefined {
     return this._groups().find(g => g.id === id);
   }
+
+  async toggleMemberPaid(groupId: string, memberId: string): Promise<void> {
+    const group = this._groups().find(g => g.id === groupId);
+    if (!group) return;
+    const paid = { ...(group.paidMembers ?? {}) };
+    paid[memberId] = !paid[memberId];
+    const updated: Group = { ...group, paidMembers: paid };
+    await this.storage.saveGroup(updated);
+    this._groups.update(gs => gs.map(g => g.id === groupId ? updated : g));
+  }
 }

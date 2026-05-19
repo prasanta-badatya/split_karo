@@ -135,6 +135,7 @@ import { formatCurrency } from '../../utils/formatters';
                   <th class="py-3.5 px-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">🏠 Rent</th>
                   <th *ngIf="hasRationOrVeg(g)" class="py-3.5 px-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">🛒🥦 Ration+Veg</th>
                   <th *ngIf="hasPersonalPaid(g)" class="py-3.5 px-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">✅ Paid</th>
+                  <th class="py-3.5 px-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wide">Status</th>
                   <th class="py-3.5 px-5 text-right text-xs font-semibold text-gray-700 uppercase tracking-wide">Pay Amount</th>
                 </tr>
               </thead>
@@ -159,9 +160,21 @@ import { formatCurrency } from '../../utils/formatters';
                   <td *ngIf="hasPersonalPaid(g)" class="py-4 px-4 text-right text-xs font-medium text-emerald-600">
                     {{ share.personalExpensePaid > 0 ? '−' + fmt(share.personalExpensePaid) : '—' }}
                   </td>
+                  <td class="py-4 px-4 text-center">
+                    <button *ngIf="share.total > 0"
+                      (click)="togglePaid(share.memberId)"
+                      [ngClass]="isPaid(share.memberId)
+                        ? 'bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200'
+                        : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'"
+                      class="text-xs font-semibold px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap">
+                      {{ isPaid(share.memberId) ? '✓ Paid' : 'Mark Paid' }}
+                    </button>
+                    <span *ngIf="share.total <= 0" class="text-xs text-emerald-500 font-medium">Gets back</span>
+                  </td>
                   <td class="py-4 px-5 text-right">
                     <div class="flex flex-col items-end">
-                      <span class="font-bold text-lg" [ngClass]="share.total < 0 ? 'text-emerald-600' : 'text-brand-600'">
+                      <span class="font-bold text-lg"
+                        [ngClass]="isPaid(share.memberId) && share.total > 0 ? 'text-emerald-500 line-through opacity-60' : share.total < 0 ? 'text-emerald-600' : 'text-brand-600'">
                         {{ fmt(share.total) }}
                       </span>
                       <span class="text-xs mt-0.5" [ngClass]="share.total < 0 ? 'text-emerald-400' : 'text-gray-400'">
@@ -179,21 +192,33 @@ import { formatCurrency } from '../../utils/formatters';
             <div *ngFor="let share of g.result.shares" class="p-4">
               <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 bg-brand-50 rounded-xl flex items-center justify-center text-xs font-bold text-brand-600">
-                    {{ share.memberName.slice(0,2).toUpperCase() }}
+                  <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0"
+                    [ngClass]="isPaid(share.memberId) && share.total > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-brand-50 text-brand-600'">
+                    {{ isPaid(share.memberId) && share.total > 0 ? '✓' : share.memberName.slice(0,2).toUpperCase() }}
                   </div>
                   <div>
                     <span class="font-bold text-gray-900">{{ share.memberName }}</span>
                     <span *ngIf="isDaywise(g)" class="ml-2 text-xs text-gray-400 font-medium">{{ share.daysPresent }}d</span>
+                    <span *ngIf="isPaid(share.memberId) && share.total > 0"
+                      class="ml-2 text-xs font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">Paid</span>
                   </div>
                 </div>
-                <div class="text-right">
-                  <p class="font-bold text-lg" [ngClass]="share.total < 0 ? 'text-emerald-600' : 'text-brand-600'">
+                <div class="text-right flex flex-col items-end gap-1">
+                  <p class="font-bold text-lg"
+                    [ngClass]="isPaid(share.memberId) && share.total > 0 ? 'text-emerald-500 line-through opacity-60' : share.total < 0 ? 'text-emerald-600' : 'text-brand-600'">
                     {{ fmt(share.total) }}
                   </p>
                   <p class="text-xs" [ngClass]="share.total < 0 ? 'text-emerald-400' : 'text-gray-400'">
                     {{ share.total < 0 ? 'Gets back' : 'Pays' }}
                   </p>
+                  <button *ngIf="share.total > 0"
+                    (click)="togglePaid(share.memberId)"
+                    [ngClass]="isPaid(share.memberId)
+                      ? 'bg-emerald-100 text-emerald-700 border-emerald-300'
+                      : 'bg-gray-100 text-gray-500 border-gray-200'"
+                    class="text-xs font-semibold px-2 py-0.5 rounded-full border transition-colors">
+                    {{ isPaid(share.memberId) ? '✓ Paid' : 'Mark Paid' }}
+                  </button>
                 </div>
               </div>
               <div class="bg-gray-50 rounded-xl p-3 space-y-1.5 text-xs">
@@ -230,10 +255,11 @@ export class GroupDetailComponent implements OnInit {
   readonly group      = signal<Group | undefined>(undefined);
   readonly isSharing  = signal(false);
   private imageShare  = inject(ImageShareService);
+  private groupId     = '';
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id') ?? '';
-    this.group.set(this.groupService.getGroup(id));
+    this.groupId = this.route.snapshot.paramMap.get('id') ?? '';
+    this.group.set(this.groupService.getGroup(this.groupId));
   }
 
   isDaywise(g: Group): boolean { return g.expenses.splitMode === 'daywise'; }
@@ -250,6 +276,15 @@ export class GroupDetailComponent implements OnInit {
 
   perPersonAvg(g: Group): number {
     return g.members.length > 0 ? g.result.grandTotal / g.members.length : 0;
+  }
+
+  isPaid(memberId: string): boolean {
+    return !!(this.group()?.paidMembers?.[memberId]);
+  }
+
+  async togglePaid(memberId: string): Promise<void> {
+    await this.groupService.toggleMemberPaid(this.groupId, memberId);
+    this.group.set(this.groupService.getGroup(this.groupId));
   }
 
   goBack(): void { this.router.navigate(['/']); }
