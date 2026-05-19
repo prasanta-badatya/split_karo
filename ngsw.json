@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1779080250863,
+  "timestamp": 1779210530251,
   "index": "/split_karo/index.html",
   "assetGroups": [
     {
@@ -11,17 +11,19 @@
         "ignoreVary": true
       },
       "urls": [
-        "/split_karo/194.3cd6f1afe6b2e562.js",
-        "/split_karo/212.b2592a1955dc6202.js",
-        "/split_karo/47.93fc53be8c47dab6.js",
-        "/split_karo/800.65f455d13f3fc206.js",
+        "/split_karo/197.3568bf28eafcec8b.js",
+        "/split_karo/206.8ce941b453ca64ac.js",
+        "/split_karo/212.aa2b7057d9b8e3a2.js",
+        "/split_karo/47.e61b5f39cb289b7a.js",
+        "/split_karo/800.63362da07140b000.js",
+        "/split_karo/common.e663a90da968834a.js",
         "/split_karo/favicon.ico",
         "/split_karo/index.html",
-        "/split_karo/main.58697db2fe66018e.js",
+        "/split_karo/main.599d60031f951226.js",
         "/split_karo/manifest.webmanifest",
         "/split_karo/polyfills.fd3756c76fea0602.js",
-        "/split_karo/runtime.d9c6aa12a3a23dda.js",
-        "/split_karo/styles.b23f1c8c0595c664.css"
+        "/split_karo/runtime.22b90ed1957549de.js",
+        "/split_karo/styles.e532202ceb37a028.css"
       ],
       "patterns": []
     },
@@ -57,20 +59,22 @@
     }
   ],
   "hashTable": {
-    "/split_karo/194.3cd6f1afe6b2e562.js": "5f5e1ae91902bd906f125f12e66f17ae99731dc0",
-    "/split_karo/212.b2592a1955dc6202.js": "11ab9b77f3ef82976e32843365192993a987c8cc",
-    "/split_karo/47.93fc53be8c47dab6.js": "4621c23063b60f63be4856a1c5438ab32fee801c",
-    "/split_karo/800.65f455d13f3fc206.js": "2015677f0b54f0fdde735e3211f4c8ed0ffe9072",
-    "/split_karo/assets/icons/icon-maskable.svg": "68656076ff62fc6dfafeb3f7e7f5c05d186b118e",
-    "/split_karo/assets/icons/icon.svg": "3303576ca4f608abc27dc05bb07d1a4d59c8169f",
+    "/split_karo/197.3568bf28eafcec8b.js": "f6c99c6a4273852e2f274a5247897cf3f8ac6275",
+    "/split_karo/206.8ce941b453ca64ac.js": "3cab31cf09a2c2d849478026c4e3c9632aec9509",
+    "/split_karo/212.aa2b7057d9b8e3a2.js": "fb0fe64107a9b8d74fc45491429f434b6ad703bc",
+    "/split_karo/47.e61b5f39cb289b7a.js": "342d668241258c05669438bffd6ae72c5318e370",
+    "/split_karo/800.63362da07140b000.js": "e0e6120dff9492a3d352b67993067435a1ebd3c9",
+    "/split_karo/assets/icons/icon-maskable.svg": "1e1d4a469705c1bfda495d11ea868fd07875ee72",
+    "/split_karo/assets/icons/icon.svg": "011d186ed9dd9c0850faa9a284200631f8b25dc5",
+    "/split_karo/common.e663a90da968834a.js": "dba7d3452161ddb8e92af30cc5539283bbe5167d",
     "/split_karo/favicon.ico": "22f6a4a3bcaafafb0254e0f2fa4ceb89e505e8b2",
-    "/split_karo/favicon.svg": "8d61e8199dace5cbef59954f54f97987e88ef8ca",
-    "/split_karo/index.html": "e167b5ac569008234276d17fa850255709c93384",
-    "/split_karo/main.58697db2fe66018e.js": "65fa8f4d91fe07ff44b9bc906979208f65e5a54d",
-    "/split_karo/manifest.webmanifest": "e4ef066f17af80887e21a76ddeb08efb4c920334",
+    "/split_karo/favicon.svg": "8919dc6f51892b162ab8ff7817cd63f3de4c561e",
+    "/split_karo/index.html": "b565e52f4f227c9daea1a5993a71b47840c65441",
+    "/split_karo/main.599d60031f951226.js": "d233fd94a5748de2ebef5ef9faa6456b59ab10d3",
+    "/split_karo/manifest.webmanifest": "8356db6513ec809a7361e08dd6f832ca4fd17c45",
     "/split_karo/polyfills.fd3756c76fea0602.js": "6b3410ff33815de6959f125856b7cd4d6b4f8441",
-    "/split_karo/runtime.d9c6aa12a3a23dda.js": "58de8687d340465e36340ca8a3b7a910fc783af1",
-    "/split_karo/styles.b23f1c8c0595c664.css": "5edee85405182d399b733e9e604bec50016c4d2b"
+    "/split_karo/runtime.22b90ed1957549de.js": "4adb514405c78133369c302f366b1e1b647c33e6",
+    "/split_karo/styles.e532202ceb37a028.css": "28824358205fb819d52e405728f52ae677266177"
   },
   "navigationUrls": [
     {
