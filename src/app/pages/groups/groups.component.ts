@@ -1,6 +1,6 @@
 import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { GroupService } from '../../services/group.service';
 import { Group } from '../../models/group.model';
 import { formatCurrency } from '../../utils/formatters';
@@ -8,9 +8,9 @@ import { formatCurrency } from '../../utils/formatters';
 @Component({
   selector: 'app-groups',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   template: `
-    <div class="min-h-screen bg-white flex flex-col">
+    <div class="min-h-screen bg-white flex flex-col pb-20">
 
       <!-- ═══ NAVBAR ═══ -->
       <header class="bg-white border-b border-gray-100 sticky top-0 z-30">
@@ -235,6 +235,20 @@ import { formatCurrency } from '../../utils/formatters';
 
         </div>
       </div>
+
+      <!-- BOTTOM NAV -->
+      <nav class="fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 z-40 flex">
+        <a routerLink="/groups"
+          class="flex-1 flex flex-col items-center justify-center py-3 gap-1 text-brand-600 border-t-2 border-brand-500 transition-colors">
+          <span class="text-xl">🏠</span>
+          <span class="text-xs font-semibold">Home Expenses</span>
+        </a>
+        <a routerLink="/trips"
+          class="flex-1 flex flex-col items-center justify-center py-3 gap-1 text-gray-400 hover:text-gray-600 transition-colors">
+          <span class="text-xl">✈️</span>
+          <span class="text-xs font-semibold">Trips</span>
+        </a>
+      </nav>
 
     </div>
   `

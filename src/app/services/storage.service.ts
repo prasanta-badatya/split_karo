@@ -1,16 +1,16 @@
 import { Injectable } from '@angular/core';
 import Dexie, { Table } from 'dexie';
 import { Group } from '../models/group.model';
+import { Trip } from '../models/trip.model';
 
 class AppDb extends Dexie {
   groups!: Table<Group, string>;
+  trips!:  Table<Trip,  string>;
 
   constructor() {
     super('SplitKaroDB');
-    // Version 1: index id (PK), name, and createdAt for sorting
-    this.version(1).stores({
-      groups: 'id, name, createdAt',
-    });
+    this.version(1).stores({ groups: 'id, name, createdAt' });
+    this.version(2).stores({ groups: 'id, name, createdAt', trips: 'id, name, createdAt' });
   }
 }
 
@@ -32,5 +32,17 @@ export class StorageService {
 
   async bulkSave(groups: Group[]): Promise<void> {
     await this.db.groups.bulkPut(groups);
+  }
+
+  async loadTrips(): Promise<Trip[]> {
+    return this.db.trips.orderBy('createdAt').reverse().toArray();
+  }
+
+  async saveTrip(trip: Trip): Promise<void> {
+    await this.db.trips.put(trip);
+  }
+
+  async deleteTrip(id: string): Promise<void> {
+    await this.db.trips.delete(id);
   }
 }
