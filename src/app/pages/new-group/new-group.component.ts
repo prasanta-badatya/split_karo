@@ -594,7 +594,7 @@ export class NewGroupComponent {
   }
 
   back(): void {
-    if (this.form().step === 1) this.router.navigate(['/']);
+    if (this.form().step === 1) this.router.navigate(['/groups']);
     else this.prevStep();
   }
 
@@ -631,7 +631,7 @@ export class NewGroupComponent {
       result,
     });
     this.formService.reset();
-    this.router.navigate(['/']);
+    this.router.navigate(['/groups']);
   }
 
   patchGroupName(v: string): void {

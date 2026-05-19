@@ -287,7 +287,7 @@ export class GroupDetailComponent implements OnInit {
     this.group.set(this.groupService.getGroup(this.groupId));
   }
 
-  goBack(): void { this.router.navigate(['/']); }
+  goBack(): void { this.router.navigate(['/groups']); }
 
   async shareImage(): Promise<void> {
     const g = this.group();
