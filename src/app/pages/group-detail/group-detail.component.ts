@@ -28,10 +28,6 @@ import { formatCurrency } from '../../utils/formatters';
           </div>
 
           <ng-container *ngIf="!isEditing()">
-            <button (click)="startEdit()"
-              class="flex-shrink-0 text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors">
-              ✏️ Edit
-            </button>
             <button (click)="shareImage()" [disabled]="isSharing()"
               class="flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold text-brand-600 border border-brand-200 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
               <svg *ngIf="!isSharing()" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -46,16 +42,6 @@ import { formatCurrency } from '../../utils/formatters';
             </button>
           </ng-container>
 
-          <ng-container *ngIf="isEditing()">
-            <button (click)="cancelEdit()"
-              class="flex-shrink-0 text-sm font-semibold text-gray-400 border border-gray-200 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors">
-              Cancel
-            </button>
-            <button (click)="saveEdit()" [disabled]="isSaving()"
-              class="flex-shrink-0 text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-60 px-3 py-1.5 rounded-lg transition-colors">
-              {{ isSaving() ? 'Saving…' : 'Save' }}
-            </button>
-          </ng-container>
         </div>
       </header>
 
@@ -131,6 +117,24 @@ import { formatCurrency } from '../../utils/formatters';
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Edit / Cancel+Save row -->
+        <div class="mb-5 flex gap-2">
+          <button *ngIf="!isEditing()" (click)="startEdit()"
+            class="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-white shadow-sm text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+            ✏️ Edit Expenses
+          </button>
+          <ng-container *ngIf="isEditing()">
+            <button (click)="saveEdit()" [disabled]="isSaving()"
+              class="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 disabled:opacity-60 text-white font-semibold text-sm transition-colors shadow-sm">
+              {{ isSaving() ? 'Saving…' : '✓ Save Changes' }}
+            </button>
+            <button (click)="cancelEdit()"
+              class="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-400 hover:bg-gray-50 transition-colors">
+              Cancel
+            </button>
+          </ng-container>
         </div>
 
         <!-- Verification Badge -->
