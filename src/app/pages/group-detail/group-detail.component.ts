@@ -1,15 +1,17 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GroupService } from '../../services/group.service';
 import { ImageShareService } from '../../services/image-share.service';
-import { Group } from '../../models/group.model';
+import { Group, Member, ExpenseConfig } from '../../models/group.model';
+import { calculateShares } from '../../utils/calculator';
 import { formatCurrency } from '../../utils/formatters';
 
 @Component({
   selector: 'app-group-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="min-h-screen bg-slate-50">
 
@@ -24,18 +26,36 @@ import { formatCurrency } from '../../utils/formatters';
             <h1 class="font-bold text-gray-900 text-sm truncate">{{ group()?.name }}</h1>
             <p class="text-xs text-gray-400 truncate">{{ group()?.cycleLabel }}</p>
           </div>
-          <button (click)="shareImage()" [disabled]="isSharing()"
-            class="flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold text-brand-600 border border-brand-200 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-            <svg *ngIf="!isSharing()" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-            </svg>
-            <svg *ngIf="isSharing()" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-            </svg>
-            {{ isSharing() ? 'Generating…' : 'Share' }}
-          </button>
+
+          <ng-container *ngIf="!isEditing()">
+            <button (click)="startEdit()"
+              class="flex-shrink-0 text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors">
+              ✏️ Edit
+            </button>
+            <button (click)="shareImage()" [disabled]="isSharing()"
+              class="flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold text-brand-600 border border-brand-200 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+              <svg *ngIf="!isSharing()" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+              <svg *ngIf="isSharing()" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              {{ isSharing() ? 'Generating…' : 'Share' }}
+            </button>
+          </ng-container>
+
+          <ng-container *ngIf="isEditing()">
+            <button (click)="cancelEdit()"
+              class="flex-shrink-0 text-sm font-semibold text-gray-400 border border-gray-200 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors">
+              Cancel
+            </button>
+            <button (click)="saveEdit()" [disabled]="isSaving()"
+              class="flex-shrink-0 text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-60 px-3 py-1.5 rounded-lg transition-colors">
+              {{ isSaving() ? 'Saving…' : 'Save' }}
+            </button>
+          </ng-container>
         </div>
       </header>
 
@@ -46,8 +66,72 @@ import { formatCurrency } from '../../utils/formatters';
         <button (click)="goBack()" class="mt-5 text-brand-600 font-semibold text-sm hover:underline">← Go Back</button>
       </div>
 
-      <!-- Content -->
+      <!-- ═══ VIEW MODE ═══ -->
       <div *ngIf="group() as g" class="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+
+        <!-- ── EDIT PANEL ── -->
+        <div *ngIf="isEditing()" class="mb-6 bg-white rounded-2xl border border-brand-200 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-gray-100 bg-brand-50 flex items-center gap-2">
+            <span class="text-base">✏️</span>
+            <h2 class="font-bold text-brand-800 text-sm">Edit Group</h2>
+            <span class="text-xs text-brand-500 ml-1">Changes recalculate automatically on save</span>
+          </div>
+
+          <!-- Expense amounts -->
+          <div class="px-5 py-4 border-b border-gray-100">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Expense Amounts</p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">🏠 Room Rent (₹)</label>
+                <input [(ngModel)]="editRent" type="number" min="0"
+                  class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">🛒 Ration (₹)</label>
+                <input [(ngModel)]="editRation" type="number" min="0"
+                  class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">🥦 Vegetable (₹)</label>
+                <input [(ngModel)]="editVegetable" type="number" min="0"
+                  class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Members -->
+          <div class="px-5 py-4">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Members</p>
+            <div class="space-y-3">
+              <div *ngFor="let m of editMembers(); let i = index"
+                class="border border-gray-100 rounded-xl p-3 bg-gray-50">
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="w-7 h-7 bg-brand-100 rounded-lg flex items-center justify-center text-xs font-bold text-brand-600 flex-shrink-0">
+                    {{ m.name.slice(0,2).toUpperCase() || '?' }}
+                  </div>
+                  <span class="font-semibold text-gray-900 text-sm">{{ m.name }}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2" [ngClass]="g.expenses.splitMode === 'daywise' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'">
+                  <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Already Paid (₹)</label>
+                    <input [(ngModel)]="m.personalExpensePaid" type="number" min="0"
+                      class="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-400" />
+                  </div>
+                  <div *ngIf="g.expenses.splitMode === 'daywise'">
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Days Present</label>
+                    <input [(ngModel)]="m.daysPresent" type="number" min="0"
+                      class="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-400" />
+                  </div>
+                  <div class="flex items-center gap-2 pt-5">
+                    <input type="checkbox" [(ngModel)]="m.includeRationVeg" [id]="'irv-' + i"
+                      class="rounded border-gray-300 text-brand-500 focus:ring-brand-400" />
+                    <label [for]="'irv-' + i" class="text-xs font-medium text-gray-500">Ration & Veggie</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- Verification Badge -->
         <div class="mb-5 rounded-xl px-4 py-3 flex items-center gap-3"
@@ -244,22 +328,67 @@ import { formatCurrency } from '../../utils/formatters';
         </div>
       </div>
     </div>
-  `
+  `,
 })
 export class GroupDetailComponent implements OnInit {
   private route        = inject(ActivatedRoute);
   private router       = inject(Router);
   private groupService = inject(GroupService);
+  private imageShare   = inject(ImageShareService);
 
   readonly fmt        = formatCurrency;
   readonly group      = signal<Group | undefined>(undefined);
   readonly isSharing  = signal(false);
-  private imageShare  = inject(ImageShareService);
+  readonly isEditing  = signal(false);
+  readonly isSaving   = signal(false);
   private groupId     = '';
+
+  // Edit state
+  editRent      = 0;
+  editRation    = 0;
+  editVegetable = 0;
+  readonly editMembers = signal<Member[]>([]);
 
   ngOnInit(): void {
     this.groupId = this.route.snapshot.paramMap.get('id') ?? '';
     this.group.set(this.groupService.getGroup(this.groupId));
+  }
+
+  startEdit(): void {
+    const g = this.group();
+    if (!g) return;
+    this.editRent      = g.expenses.rentAmount;
+    this.editRation    = g.expenses.rationAmount;
+    this.editVegetable = g.expenses.vegetableAmount;
+    this.editMembers.set(g.members.map(m => ({ ...m })));
+    this.isEditing.set(true);
+  }
+
+  cancelEdit(): void {
+    this.isEditing.set(false);
+  }
+
+  async saveEdit(): Promise<void> {
+    const g = this.group();
+    if (!g) return;
+    this.isSaving.set(true);
+    const expenses: ExpenseConfig = {
+      ...g.expenses,
+      rentAmount:      Number(this.editRent)      || 0,
+      rationAmount:    Number(this.editRation)    || 0,
+      vegetableAmount: Number(this.editVegetable) || 0,
+    };
+    const members = this.editMembers().map(m => ({
+      ...m,
+      daysPresent:         Number(m.daysPresent)         || 0,
+      personalExpensePaid: Number(m.personalExpensePaid) || 0,
+    }));
+    const result = calculateShares(expenses, members);
+    const updated: Group = { ...g, expenses, members, result };
+    await this.groupService.updateGroup(updated);
+    this.group.set(updated);
+    this.isEditing.set(false);
+    this.isSaving.set(false);
   }
 
   isDaywise(g: Group): boolean { return g.expenses.splitMode === 'daywise'; }
@@ -268,9 +397,7 @@ export class GroupDetailComponent implements OnInit {
 
   dailyAvg(g: Group): number {
     const pool = g.result.totalRation + g.result.totalVegetable;
-    const totalDays = g.members
-      .filter(m => m.includeRationVeg)
-      .reduce((s, m) => s + m.daysPresent, 0);
+    const totalDays = g.members.filter(m => m.includeRationVeg).reduce((s, m) => s + m.daysPresent, 0);
     return totalDays > 0 ? pool / totalDays : 0;
   }
 
@@ -297,81 +424,6 @@ export class GroupDetailComponent implements OnInit {
       await this.imageShare.shareImage(g);
     } finally {
       this.isSharing.set(false);
-    }
-  }
-
-  share(): void {
-    const g = this.group();
-    if (!g) return;
-
-    const daywise = this.isDaywise(g);
-    const hasRV = this.hasRationOrVeg(g);
-    const hasPaid = this.hasPersonalPaid(g);
-
-    // Column widths
-    const col = (s: string, w: number) => s.padEnd(w).slice(0, w);
-
-    // Header row
-    let header = col('Member', 14);
-    if (daywise) header += col('Days', 6);
-    header += col('Rent', 10);
-    if (hasRV) header += col('Ration+Veg', 12);
-    if (hasPaid) header += col('Paid', 10);
-    header += 'Pay Amount';
-
-    const divider = '-'.repeat(header.length);
-
-    // Data rows
-    const rows = g.result.shares.map(s => {
-      let row = col(s.memberName, 14);
-      if (daywise) row += col(`${s.daysPresent}d`, 6);
-      row += col(`₹${s.rentShare.toFixed(2)}`, 10);
-      if (hasRV) row += col(s.rationVegShare > 0 ? `₹${s.rationVegShare.toFixed(2)}` : '—', 12);
-      if (hasPaid) row += col(s.personalExpensePaid > 0 ? `-₹${s.personalExpensePaid.toFixed(2)}` : '—', 10);
-      row += (s.total < 0 ? `Gets ₹${Math.abs(s.total).toFixed(2)}` : `₹${s.total.toFixed(2)}`);
-      return row;
-    });
-
-    const lines = [
-      `*Split Karo – ${g.name}*`,
-      `Period: ${g.cycleLabel}`,
-      `Split: ${daywise ? 'Day-wise' : 'Equal'}`,
-      ``,
-      `Expenses:`,
-      `  Room Rent:  ₹${g.result.totalRent}`,
-      `  Ration:     ₹${g.result.totalRation}`,
-      `  Vegetable:  ₹${g.result.totalVegetable}`,
-      `  Total:      ₹${g.result.grandTotal}`,
-      ``,
-      `Breakdown:`,
-      header,
-      divider,
-      ...rows,
-      divider,
-      ``,
-      g.result.verificationOk
-        ? `✅ Verification passed — sum of all shares = ₹${g.result.grandTotal}`
-        : `❌ Verification failed`,
-      ``,
-      `Generated by Split Karo`,
-    ];
-
-    const text = lines.join('\n');
-    if (navigator.share) {
-      navigator.share({ text });
-    } else if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text).then(() => alert('Copied to clipboard!'));
-    } else {
-      // Fallback for HTTP / older browsers
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      alert('Copied to clipboard!');
     }
   }
 }
