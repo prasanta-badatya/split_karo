@@ -83,7 +83,7 @@ interface ExpenseRow {
             + Add Member
           </button>
 
-          <button (click)="step.set(3)" [disabled]="!canProceedToExpenses()"
+          <button (click)="goToExpenses()" [disabled]="!canProceedToExpenses()"
             class="mt-6 w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl text-sm transition-colors shadow-sm">
             Next: Add Expenses →
           </button>
@@ -199,6 +199,16 @@ export class NewTripComponent {
 
   canProceedToExpenses(): boolean {
     return this.members().filter(m => m.name.trim()).length >= 2;
+  }
+
+  goToExpenses(): void {
+    // Reset expense rows with fresh defaults based on current members
+    const row = this.blankRow();
+    const vm = this.validMembers();
+    vm.forEach(m => (row.splitAmong[m.id] = true));
+    if (vm.length > 0) row.paidBy = vm[0].id;
+    this.expenseRows.set([row]);
+    this.step.set(3);
   }
 
   private blankRow(): ExpenseRow {

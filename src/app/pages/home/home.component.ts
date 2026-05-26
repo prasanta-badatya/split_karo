@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { GroupService } from '../../services/group.service';
+import { TripService } from '../../services/trip.service';
 
 @Component({
   selector: 'app-home',
@@ -20,9 +21,15 @@ import { GroupService } from '../../services/group.service';
             <span class="text-base font-bold text-gray-900">Split Karo</span>
           </div>
           <div class="flex items-center gap-2">
+            <button (click)="goToTrips()"
+              class="flex items-center gap-1.5 bg-white border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 text-gray-700 hover:text-indigo-600 font-semibold px-3 py-2 rounded-lg text-sm transition-colors shadow-sm">
+              ✈️ Trips
+              <span *ngIf="!isLoading() && trips().length > 0"
+                class="bg-indigo-100 text-indigo-700 text-xs font-bold px-1.5 py-0.5 rounded-full">{{ trips().length }}</span>
+            </button>
             <button *ngIf="!isLoading() && groups().length > 0" (click)="goToGroups()"
-              class="flex items-center gap-1.5 bg-white border border-gray-200 hover:border-brand-300 hover:bg-brand-50 text-gray-700 hover:text-brand-600 font-semibold px-4 py-2 rounded-lg text-sm transition-colors shadow-sm">
-              My Groups
+              class="flex items-center gap-1.5 bg-white border border-gray-200 hover:border-brand-300 hover:bg-brand-50 text-gray-700 hover:text-brand-600 font-semibold px-3 py-2 rounded-lg text-sm transition-colors shadow-sm">
+              🏠 Groups
               <span class="bg-brand-100 text-brand-700 text-xs font-bold px-1.5 py-0.5 rounded-full">{{ groups().length }}</span>
             </button>
             <button (click)="goToNew()"
@@ -71,24 +78,37 @@ import { GroupService } from '../../services/group.service';
                   <span class="flex items-center gap-1.5 bg-white border border-gray-100 shadow-sm text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-full">🏠 Room Rent</span>
                   <span class="flex items-center gap-1.5 bg-white border border-gray-100 shadow-sm text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-full">🛒 Ration</span>
                   <span class="flex items-center gap-1.5 bg-white border border-gray-100 shadow-sm text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-full">🥦 Vegetables</span>
-                  <span class="flex items-center gap-1.5 bg-white border border-gray-100 shadow-sm text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-full">📅 Day-wise split</span>
+                  <span class="flex items-center gap-1.5 bg-white border border-gray-100 shadow-sm text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-full">✈️ Trip splits</span>
                 </div>
 
-                <!-- CTA -->
-                <div class="anim-fade-up anim-d4">
+                <!-- CTA — Home Expenses -->
+                <div class="anim-fade-up anim-d4 space-y-3">
                   <div class="flex flex-wrap gap-3 justify-center lg:justify-start">
                     <button (click)="goToNew()"
-                      class="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-bold px-8 py-4 rounded-xl text-base shadow-lg hover:shadow-brand-200 hover:shadow-xl transition-all duration-200 active:scale-95">
-                      <span class="text-lg leading-none">+</span>
-                      {{ groups().length === 0 ? 'Create Your First Group' : 'New Group' }}
+                      class="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-bold px-6 py-3.5 rounded-xl text-sm shadow-lg transition-all duration-200 active:scale-95">
+                      🏠 {{ groups().length === 0 ? 'New Home Expense Group' : 'New Group' }}
                     </button>
                     <button *ngIf="groups().length > 0" (click)="goToGroups()"
-                      class="inline-flex items-center gap-2 bg-white border-2 border-brand-200 hover:border-brand-400 hover:bg-brand-50 text-brand-600 font-bold px-8 py-4 rounded-xl text-base transition-all duration-200 active:scale-95">
+                      class="inline-flex items-center gap-2 bg-white border-2 border-brand-200 hover:border-brand-400 hover:bg-brand-50 text-brand-600 font-bold px-6 py-3.5 rounded-xl text-sm transition-all duration-200 active:scale-95">
                       My Groups
-                      <span class="bg-brand-100 text-brand-700 text-sm font-bold px-2 py-0.5 rounded-full">{{ groups().length }}</span>
+                      <span class="bg-brand-100 text-brand-700 text-xs font-bold px-2 py-0.5 rounded-full">{{ groups().length }}</span>
                     </button>
                   </div>
-                  <p class="text-xs text-gray-400 mt-3 font-medium">Free · No signup required · Works offline</p>
+
+                  <!-- CTA — Trips -->
+                  <div class="flex flex-wrap gap-3 justify-center lg:justify-start">
+                    <button (click)="goToNewTrip()"
+                      class="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-6 py-3.5 rounded-xl text-sm shadow-lg transition-all duration-200 active:scale-95">
+                      ✈️ {{ trips().length === 0 ? 'Plan a Trip' : 'New Trip' }}
+                    </button>
+                    <button *ngIf="trips().length > 0" (click)="goToTrips()"
+                      class="inline-flex items-center gap-2 bg-white border-2 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 text-indigo-600 font-bold px-6 py-3.5 rounded-xl text-sm transition-all duration-200 active:scale-95">
+                      My Trips
+                      <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">{{ trips().length }}</span>
+                    </button>
+                  </div>
+
+                  <p class="text-xs text-gray-400 font-medium text-center lg:text-left">Free · No signup required · Works offline</p>
                 </div>
               </div>
 
@@ -188,9 +208,13 @@ import { GroupService } from '../../services/group.service';
 export class HomeComponent {
   private router = inject(Router);
   private groupService = inject(GroupService);
+  private tripService  = inject(TripService);
   readonly groups    = this.groupService.groups;
+  readonly trips     = this.tripService.trips;
   readonly isLoading = this.groupService.isLoading;
 
-  goToNew(): void { this.router.navigate(['/new']); }
-  goToGroups(): void { this.router.navigate(['/groups']); }
+  goToNew(): void      { this.router.navigate(['/new']); }
+  goToGroups(): void   { this.router.navigate(['/groups']); }
+  goToNewTrip(): void  { this.router.navigate(['/trips/new']); }
+  goToTrips(): void    { this.router.navigate(['/trips']); }
 }
