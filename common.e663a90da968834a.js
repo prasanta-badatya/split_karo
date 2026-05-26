@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunksplit_karo=self.webpackChunksplit_karo||[]).push([[76],{9269:(s,n,e)=>{function o(r){const t=Math.abs(r);return"\u20b9"+(t%1==0?t.toLocaleString("en-IN"):t.toFixed(2))}function a(){return Math.random().toString(36).slice(2,10)+Date.now().toString(36)}e.d(n,{A:()=>a,v:()=>o})}}]);
