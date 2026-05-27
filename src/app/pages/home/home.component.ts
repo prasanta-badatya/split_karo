@@ -1,13 +1,14 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { GroupService } from '../../services/group.service';
 import { TripService } from '../../services/trip.service';
+import { QuickSplitComponent } from '../../components/quick-split/quick-split.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, QuickSplitComponent],
   template: `
     <div class="min-h-screen bg-white flex flex-col">
 
@@ -81,34 +82,39 @@ import { TripService } from '../../services/trip.service';
                   <span class="flex items-center gap-1.5 bg-white border border-gray-100 shadow-sm text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-full">✈️ Trip splits</span>
                 </div>
 
-                <!-- CTA — Home Expenses -->
+                <!-- CTA buttons -->
                 <div class="anim-fade-up anim-d4 space-y-3">
-                  <div class="flex flex-wrap gap-3 justify-center lg:justify-start">
+
+                  <!-- Quick Split — most prominent -->
+                  <div class="flex justify-center lg:justify-start">
+                    <button (click)="showQuickSplit.set(true)"
+                      class="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-amber-900 font-bold px-7 py-4 rounded-xl text-base shadow-lg transition-all duration-200 active:scale-95">
+                      ⚡ Quick Split
+                      <span class="text-xs bg-amber-300 text-amber-900 px-2 py-0.5 rounded-full font-semibold">5 sec</span>
+                    </button>
+                  </div>
+
+                  <!-- Home Expenses + Trips -->
+                  <div class="flex flex-wrap gap-2 justify-center lg:justify-start">
                     <button (click)="goToNew()"
-                      class="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-bold px-6 py-3.5 rounded-xl text-sm shadow-lg transition-all duration-200 active:scale-95">
-                      🏠 {{ groups().length === 0 ? 'New Home Expense Group' : 'New Group' }}
+                      class="inline-flex items-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white font-semibold px-4 py-2.5 rounded-xl text-sm shadow transition-all duration-200 active:scale-95">
+                      🏠 New Group
                     </button>
                     <button *ngIf="groups().length > 0" (click)="goToGroups()"
-                      class="inline-flex items-center gap-2 bg-white border-2 border-brand-200 hover:border-brand-400 hover:bg-brand-50 text-brand-600 font-bold px-6 py-3.5 rounded-xl text-sm transition-all duration-200 active:scale-95">
-                      My Groups
-                      <span class="bg-brand-100 text-brand-700 text-xs font-bold px-2 py-0.5 rounded-full">{{ groups().length }}</span>
+                      class="inline-flex items-center gap-1.5 bg-white border border-brand-200 hover:bg-brand-50 text-brand-600 font-semibold px-4 py-2.5 rounded-xl text-sm transition-all duration-200 active:scale-95">
+                      My Groups <span class="bg-brand-100 text-brand-700 text-xs font-bold px-1.5 py-0.5 rounded-full">{{ groups().length }}</span>
                     </button>
-                  </div>
-
-                  <!-- CTA — Trips -->
-                  <div class="flex flex-wrap gap-3 justify-center lg:justify-start">
                     <button (click)="goToNewTrip()"
-                      class="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-6 py-3.5 rounded-xl text-sm shadow-lg transition-all duration-200 active:scale-95">
-                      ✈️ {{ trips().length === 0 ? 'Plan a Trip' : 'New Trip' }}
+                      class="inline-flex items-center gap-1.5 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-4 py-2.5 rounded-xl text-sm shadow transition-all duration-200 active:scale-95">
+                      ✈️ New Trip
                     </button>
                     <button *ngIf="trips().length > 0" (click)="goToTrips()"
-                      class="inline-flex items-center gap-2 bg-white border-2 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 text-indigo-600 font-bold px-6 py-3.5 rounded-xl text-sm transition-all duration-200 active:scale-95">
-                      My Trips
-                      <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">{{ trips().length }}</span>
+                      class="inline-flex items-center gap-1.5 bg-white border border-indigo-200 hover:bg-indigo-50 text-indigo-600 font-semibold px-4 py-2.5 rounded-xl text-sm transition-all duration-200 active:scale-95">
+                      My Trips <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-1.5 py-0.5 rounded-full">{{ trips().length }}</span>
                     </button>
                   </div>
 
-                  <p class="text-xs text-gray-400 font-medium text-center lg:text-left">Free · No signup required · Works offline</p>
+                  <p class="text-xs text-gray-400 font-medium text-center lg:text-left">Free · No signup · Works offline</p>
                 </div>
               </div>
 
@@ -202,6 +208,84 @@ import { TripService } from '../../services/trip.service';
         </section>
       </ng-container>
 
+      <!-- ═══ WHICH TOOL? GUIDE ═══ -->
+      <ng-container *ngIf="!isLoading()">
+        <section class="bg-gray-50 border-t border-gray-100 py-10">
+          <div class="max-w-6xl mx-auto px-4 sm:px-8">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest text-center mb-6">Which split should I use?</p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+              <!-- Quick Split -->
+              <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex flex-col gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-11 h-11 bg-amber-400 rounded-xl flex items-center justify-center text-2xl shadow-sm flex-shrink-0">⚡</div>
+                  <div>
+                    <p class="font-bold text-gray-900">Quick Split</p>
+                    <p class="text-xs text-amber-700 font-semibold">Done in 5 seconds</p>
+                  </div>
+                </div>
+                <ul class="space-y-1.5 text-xs text-gray-600">
+                  <li class="flex items-start gap-1.5"><span class="text-amber-500 font-bold mt-0.5">✓</span> Restaurant / café bills</li>
+                  <li class="flex items-start gap-1.5"><span class="text-amber-500 font-bold mt-0.5">✓</span> One-time group purchases</li>
+                  <li class="flex items-start gap-1.5"><span class="text-amber-500 font-bold mt-0.5">✓</span> No saving needed</li>
+                  <li class="flex items-start gap-1.5"><span class="text-amber-500 font-bold mt-0.5">✓</span> Share via WhatsApp instantly</li>
+                </ul>
+                <button (click)="showQuickSplit.set(true)"
+                  class="mt-auto w-full bg-amber-400 hover:bg-amber-500 text-amber-900 font-bold py-2.5 rounded-xl text-sm transition-colors">
+                  ⚡ Open Quick Split
+                </button>
+              </div>
+
+              <!-- Home Expenses -->
+              <div class="bg-brand-50 border border-brand-100 rounded-2xl p-5 flex flex-col gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-11 h-11 bg-brand-500 rounded-xl flex items-center justify-center text-2xl shadow-sm flex-shrink-0">🏠</div>
+                  <div>
+                    <p class="font-bold text-gray-900">Home Expenses</p>
+                    <p class="text-xs text-brand-600 font-semibold">Monthly cycle tracking</p>
+                  </div>
+                </div>
+                <ul class="space-y-1.5 text-xs text-gray-600">
+                  <li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold mt-0.5">✓</span> Room rent + ration + vegetables</li>
+                  <li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold mt-0.5">✓</span> Equal or day-wise split</li>
+                  <li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold mt-0.5">✓</span> Saves every 15-day cycle</li>
+                  <li class="flex items-start gap-1.5"><span class="text-brand-500 font-bold mt-0.5">✓</span> Mark paid / share as image</li>
+                </ul>
+                <button (click)="goToNew()"
+                  class="mt-auto w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">
+                  🏠 New Group
+                </button>
+              </div>
+
+              <!-- Trip -->
+              <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 flex flex-col gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-11 h-11 bg-indigo-500 rounded-xl flex items-center justify-center text-2xl shadow-sm flex-shrink-0">✈️</div>
+                  <div>
+                    <p class="font-bold text-gray-900">Trip Split</p>
+                    <p class="text-xs text-indigo-600 font-semibold">Multi-expense tracking</p>
+                  </div>
+                </div>
+                <ul class="space-y-1.5 text-xs text-gray-600">
+                  <li class="flex items-start gap-1.5"><span class="text-indigo-500 font-bold mt-0.5">✓</span> Picnic, road trip, outing</li>
+                  <li class="flex items-start gap-1.5"><span class="text-indigo-500 font-bold mt-0.5">✓</span> Multiple expenses, any payer</li>
+                  <li class="flex items-start gap-1.5"><span class="text-indigo-500 font-bold mt-0.5">✓</span> Minimum transfers to settle</li>
+                  <li class="flex items-start gap-1.5"><span class="text-indigo-500 font-bold mt-0.5">✓</span> Mark each payment done</li>
+                </ul>
+                <button (click)="goToNewTrip()"
+                  class="mt-auto w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">
+                  ✈️ New Trip
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </section>
+      </ng-container>
+
+      <!-- Quick Split overlay -->
+      <app-quick-split *ngIf="showQuickSplit()" (close)="showQuickSplit.set(false)"></app-quick-split>
+
     </div>
   `
 })
@@ -209,9 +293,10 @@ export class HomeComponent {
   private router = inject(Router);
   private groupService = inject(GroupService);
   private tripService  = inject(TripService);
-  readonly groups    = this.groupService.groups;
-  readonly trips     = this.tripService.trips;
-  readonly isLoading = this.groupService.isLoading;
+  readonly groups         = this.groupService.groups;
+  readonly trips          = this.tripService.trips;
+  readonly isLoading      = this.groupService.isLoading;
+  readonly showQuickSplit = signal(false);
 
   goToNew(): void      { this.router.navigate(['/new']); }
   goToGroups(): void   { this.router.navigate(['/groups']); }
