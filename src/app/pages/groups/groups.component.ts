@@ -1,6 +1,6 @@
 import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { GroupService } from '../../services/group.service';
 import { Group } from '../../models/group.model';
 import { formatCurrency } from '../../utils/formatters';
@@ -8,19 +8,18 @@ import { formatCurrency } from '../../utils/formatters';
 @Component({
   selector: 'app-groups',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   template: `
     <div class="min-h-screen bg-white flex flex-col pb-20">
 
       <!-- ═══ NAVBAR ═══ -->
       <header class="bg-white border-b border-gray-100 sticky top-0 z-30">
-        <div class="max-w-6xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between">
+        <div class="max-w-6xl mx-auto px-4 sm:px-8 h-14 flex items-center justify-between">
           <div class="flex items-center gap-2.5">
-            <button (click)="goHome()"
-              class="w-9 h-9 bg-brand-500 rounded-xl flex items-center justify-center shadow-sm hover:bg-brand-600 active:bg-brand-700 transition-colors">
-              <span class="text-white font-bold text-sm tracking-tight">SK</span>
-            </button>
-            <span class="text-base font-bold text-gray-900">Split Karo</span>
+            <div class="w-8 h-8 bg-brand-500 rounded-xl flex items-center justify-center shadow-sm">
+              <span class="text-white font-bold text-xs tracking-tight">SK</span>
+            </div>
+            <span class="text-base font-bold text-gray-900">Groups</span>
           </div>
           <button (click)="goToNew()"
             class="bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors shadow-sm">
@@ -40,11 +39,6 @@ import { formatCurrency } from '../../utils/formatters';
       <!-- ═══ DASHBOARD ═══ -->
       <div *ngIf="!isLoading()" class="bg-slate-50 flex-1">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-
-          <!-- Back link -->
-          <button (click)="goHome()" class="flex items-center gap-1.5 text-xs text-brand-600 font-semibold mb-5 hover:underline anim-fade-up">
-            ← Back to Home
-          </button>
 
           <!-- Stats Strip -->
           <div class="grid grid-cols-3 gap-3 mb-6 anim-fade-up">
@@ -236,19 +230,6 @@ import { formatCurrency } from '../../utils/formatters';
         </div>
       </div>
 
-      <!-- BOTTOM NAV -->
-      <nav class="fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 z-40 flex">
-        <a routerLink="/groups"
-          class="flex-1 flex flex-col items-center justify-center py-3 gap-1 text-brand-600 border-t-2 border-brand-500 transition-colors">
-          <span class="text-xl">🏠</span>
-          <span class="text-xs font-semibold">Home Expenses</span>
-        </a>
-        <a routerLink="/trips"
-          class="flex-1 flex flex-col items-center justify-center py-3 gap-1 text-gray-400 hover:text-gray-600 transition-colors">
-          <span class="text-xl">✈️</span>
-          <span class="text-xs font-semibold">Trips</span>
-        </a>
-      </nav>
 
     </div>
   `

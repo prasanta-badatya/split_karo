@@ -1,22 +1,22 @@
 import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { TripService } from '../../services/trip.service';
 import { Trip } from '../../models/trip.model';
 
 @Component({
   selector: 'app-trips',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   template: `
     <div class="min-h-screen bg-slate-50 flex flex-col pb-20">
 
       <!-- NAVBAR -->
       <header class="bg-white border-b border-gray-100 sticky top-0 z-30">
-        <div class="max-w-6xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between">
+        <div class="max-w-6xl mx-auto px-4 sm:px-8 h-14 flex items-center justify-between">
           <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 bg-brand-500 rounded-xl flex items-center justify-center shadow-sm">
-              <span class="text-white font-bold text-sm">SK</span>
+            <div class="w-8 h-8 bg-brand-500 rounded-xl flex items-center justify-center shadow-sm">
+              <span class="text-white font-bold text-xs">SK</span>
             </div>
             <span class="text-base font-bold text-gray-900">Trips</span>
           </div>
@@ -149,20 +149,6 @@ import { Trip } from '../../models/trip.model';
         </div>
 
       </div>
-
-      <!-- BOTTOM NAV -->
-      <nav class="fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 z-40 flex">
-        <a routerLink="/groups"
-          class="flex-1 flex flex-col items-center justify-center py-3 gap-1 text-gray-400 hover:text-gray-600 transition-colors">
-          <span class="text-xl">🏠</span>
-          <span class="text-xs font-semibold">Home Expenses</span>
-        </a>
-        <a routerLink="/trips"
-          class="flex-1 flex flex-col items-center justify-center py-3 gap-1 text-brand-600 border-t-2 border-brand-500 transition-colors">
-          <span class="text-xl">✈️</span>
-          <span class="text-xs font-semibold">Trips</span>
-        </a>
-      </nav>
 
     </div>
   `,
