@@ -30,7 +30,7 @@
       "name": "New Group",
       "short_name": "New Group",
       "description": "Create a new expense-splitting group",
-      "url": "/split_karo/#/new-group",
+      "url": "/split_karo/new",
       "icons": [
         {
           "src": "assets/icons/icon.svg",
