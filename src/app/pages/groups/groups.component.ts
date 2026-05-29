@@ -2,6 +2,7 @@ import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { GroupService } from '../../services/group.service';
+import { UiService } from '../../services/ui.service';
 import { Group } from '../../models/group.model';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -237,6 +238,7 @@ import { formatCurrency } from '../../utils/formatters';
 export class GroupsComponent {
   private router = inject(Router);
   private groupService = inject(GroupService);
+  private ui = inject(UiService);
   readonly fmt          = formatCurrency;
   readonly groups       = this.groupService.groups;
   readonly isLoading    = this.groupService.isLoading;
@@ -259,8 +261,17 @@ export class GroupsComponent {
   goToNew(): void { this.router.navigate(['/new']); }
   viewGroup(id: string): void { this.router.navigate(['/group', id]); }
 
-  deleteGroup(event: Event, id: string): void {
+  async deleteGroup(event: Event, id: string): Promise<void> {
     event.stopPropagation();
-    if (confirm('Delete this group?')) this.groupService.deleteGroup(id);
+    const group = this.groups().find(g => g.id === id);
+    const ok = await this.ui.confirm({
+      title: 'Delete this group?',
+      message: group ? `"${group.name}" and its breakdown will be removed.` : '',
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    await this.groupService.deleteGroup(id);
+    this.ui.toast('Group deleted', '🗑️');
   }
 }

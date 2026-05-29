@@ -45,4 +45,12 @@ export class StorageService {
   async deleteTrip(id: string): Promise<void> {
     await this.db.trips.delete(id);
   }
+
+  async bulkSaveTrips(trips: Trip[]): Promise<void> {
+    await this.db.trips.bulkPut(trips);
+  }
+
+  async clearAll(): Promise<void> {
+    await Promise.all([this.db.groups.clear(), this.db.trips.clear()]);
+  }
 }

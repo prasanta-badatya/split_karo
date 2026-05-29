@@ -2,6 +2,7 @@ import { Component, inject, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TripService } from '../../services/trip.service';
+import { UiService } from '../../services/ui.service';
 import { Trip, TripExpense } from '../../models/trip.model';
 
 @Component({
@@ -160,6 +161,7 @@ export class TripDetailComponent {
   readonly router      = inject(Router);
   private route        = inject(ActivatedRoute);
   private tripService  = inject(TripService);
+  private ui           = inject(UiService);
 
   readonly trip = computed(() => {
     const id = this.route.snapshot.paramMap.get('id') ?? '';
@@ -205,13 +207,18 @@ export class TripDetailComponent {
     await this.tripService.toggleSettlementPaid(t.id, index);
   }
 
-  deleteTrip(): void {
-    if (confirm('Delete this trip?')) {
-      const id = this.trip()?.id;
-      if (id) {
-        this.tripService.deleteTrip(id);
-        this.router.navigate(['/trips']);
-      }
-    }
+  async deleteTrip(): Promise<void> {
+    const t = this.trip();
+    if (!t) return;
+    const ok = await this.ui.confirm({
+      title: 'Delete this trip?',
+      message: `"${t.name}" and its settlements will be removed.`,
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    await this.tripService.deleteTrip(t.id);
+    this.ui.toast('Trip deleted', '🗑️');
+    this.router.navigate(['/trips']);
   }
 }

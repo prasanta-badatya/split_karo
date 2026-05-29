@@ -2,6 +2,7 @@ import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { TripService } from '../../services/trip.service';
+import { UiService } from '../../services/ui.service';
 import { Trip } from '../../models/trip.model';
 
 @Component({
@@ -156,6 +157,7 @@ import { Trip } from '../../models/trip.model';
 export class TripsComponent {
   readonly router     = inject(Router);
   private tripService = inject(TripService);
+  private ui          = inject(UiService);
   readonly trips      = this.tripService.trips;
   readonly isLoading  = this.tripService.isLoading;
 
@@ -170,8 +172,17 @@ export class TripsComponent {
     return trip.settlements.filter(s => s.paid).length;
   }
 
-  deleteTrip(event: Event, id: string): void {
+  async deleteTrip(event: Event, id: string): Promise<void> {
     event.stopPropagation();
-    if (confirm('Delete this trip?')) this.tripService.deleteTrip(id);
+    const trip = this.trips().find(t => t.id === id);
+    const ok = await this.ui.confirm({
+      title: 'Delete this trip?',
+      message: trip ? `"${trip.name}" and its settlements will be removed.` : '',
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    await this.tripService.deleteTrip(id);
+    this.ui.toast('Trip deleted', '🗑️');
   }
 }

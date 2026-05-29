@@ -31,6 +31,10 @@ export class TripService {
     return this._trips().find(t => t.id === id);
   }
 
+  async reload(): Promise<void> {
+    this._trips.set(await this.storage.loadTrips());
+  }
+
   async toggleSettlementPaid(tripId: string, index: number): Promise<void> {
     const trip = this._trips().find(t => t.id === tripId);
     if (!trip) return;

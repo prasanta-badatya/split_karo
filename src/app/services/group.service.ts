@@ -47,6 +47,10 @@ export class GroupService {
     return this._groups().find(g => g.id === id);
   }
 
+  async reload(): Promise<void> {
+    this._groups.set(await this.storage.loadGroups());
+  }
+
   async updateGroup(group: Group): Promise<void> {
     await this.storage.saveGroup(group);
     this._groups.update(gs => gs.map(g => g.id === group.id ? group : g));

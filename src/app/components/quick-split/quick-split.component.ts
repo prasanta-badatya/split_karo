@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TripService } from '../../services/trip.service';
+import { UiService } from '../../services/ui.service';
 import { calculateSettlements } from '../../utils/trip-calculator';
 import { Trip, TripMember, TripExpense } from '../../models/trip.model';
 
@@ -234,6 +235,7 @@ export class QuickSplitComponent {
   @Output() close = new EventEmitter<void>();
   private router      = inject(Router);
   private tripService = inject(TripService);
+  private ui          = inject(UiService);
 
   readonly modes = [
     { key: 'equal'    as Mode, icon: '⚖️', label: 'Equal',    hint: 'Everyone pays same' },
@@ -319,9 +321,9 @@ export class QuickSplitComponent {
   shareResult(): void {
     const text = this.buildShareText();
     if (navigator.share) {
-      navigator.share({ text });
+      navigator.share({ text }).catch(() => {});
     } else if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text).then(() => alert('Copied to clipboard!'));
+      navigator.clipboard.writeText(text).then(() => this.ui.toast('Copied to clipboard'));
     } else {
       const ta = Object.assign(document.createElement('textarea'), { value: text });
       Object.assign(ta.style, { position: 'fixed', opacity: '0' });
@@ -329,7 +331,7 @@ export class QuickSplitComponent {
       ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
-      alert('Copied to clipboard!');
+      this.ui.toast('Copied to clipboard');
     }
   }
 
@@ -449,6 +451,7 @@ export class QuickSplitComponent {
       settlements,
     };
     await this.tripService.addTrip(trip);
+    this.ui.toast('Saved as trip', '💾');
     this.close.emit();
     this.router.navigate(['/trip', trip.id]);
   }

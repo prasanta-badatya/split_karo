@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { GroupFormService } from '../../services/group-form.service';
 import { GroupService } from '../../services/group.service';
+import { UiService } from '../../services/ui.service';
 import { calculateShares } from '../../utils/calculator';
 import { nanoid, formatCurrency } from '../../utils/formatters';
 import { Member, ExpenseConfig, SplitMode } from '../../models/group.model';
@@ -515,6 +516,7 @@ export class NewGroupComponent {
   private router = inject(Router);
   private formService = inject(GroupFormService);
   private groupService = inject(GroupService);
+  private ui = inject(UiService);
 
   @ViewChildren('nameInput') nameInputs!: QueryList<ElementRef<HTMLInputElement>>;
 
@@ -606,14 +608,14 @@ export class NewGroupComponent {
   nextStep(): void {
     const f = this.form();
     if (f.step === 1) {
-      if (!f.groupName.trim()) { alert('Please enter a Group Name'); return; }
-      if (!f.fromDate || !f.toDate) { alert('Please select both From and To dates'); return; }
-      if (f.toDate < f.fromDate) { alert('End date must be after start date'); return; }
+      if (!f.groupName.trim()) { this.ui.toast('Please enter a Group Name', '⚠️'); return; }
+      if (!f.fromDate || !f.toDate) { this.ui.toast('Please select both From and To dates', '⚠️'); return; }
+      if (f.toDate < f.fromDate) { this.ui.toast('End date must be after start date', '⚠️'); return; }
     }
-    if (f.step === 3 && f.members.length === 0) { alert('Please add at least one member'); return; }
+    if (f.step === 3 && f.members.length === 0) { this.ui.toast('Please add at least one member', '⚠️'); return; }
     if (f.step === 3) {
       const invalid = f.members.find(m => !m.name.trim());
-      if (invalid) { alert('Please fill all member names'); return; }
+      if (invalid) { this.ui.toast('Please fill all member names', '⚠️'); return; }
     }
     if (f.step < 4) this.formService.setStep((f.step + 1) as 2 | 3 | 4);
   }
@@ -631,6 +633,7 @@ export class NewGroupComponent {
       result,
     });
     this.formService.reset();
+    this.ui.toast('Group created', '🎉');
     this.router.navigate(['/groups']);
   }
 

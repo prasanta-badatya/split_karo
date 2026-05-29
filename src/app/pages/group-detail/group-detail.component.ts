@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GroupService } from '../../services/group.service';
 import { ImageShareService } from '../../services/image-share.service';
+import { UiService } from '../../services/ui.service';
 import { Group, Member, ExpenseConfig } from '../../models/group.model';
 import { calculateShares } from '../../utils/calculator';
 import { formatCurrency } from '../../utils/formatters';
@@ -339,6 +340,7 @@ export class GroupDetailComponent implements OnInit {
   private router       = inject(Router);
   private groupService = inject(GroupService);
   private imageShare   = inject(ImageShareService);
+  private ui           = inject(UiService);
 
   readonly fmt        = formatCurrency;
   readonly group      = signal<Group | undefined>(undefined);
@@ -393,6 +395,7 @@ export class GroupDetailComponent implements OnInit {
     this.group.set(updated);
     this.isEditing.set(false);
     this.isSaving.set(false);
+    this.ui.toast('Changes saved', '✅');
   }
 
   isDaywise(g: Group): boolean { return g.expenses.splitMode === 'daywise'; }
