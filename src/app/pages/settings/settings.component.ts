@@ -143,6 +143,7 @@ export class SettingsComponent {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    localStorage.setItem('sk_lastBackupAt', String(Date.now()));
     this.ui.toast('Backup downloaded');
   }
 

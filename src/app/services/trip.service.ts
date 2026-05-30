@@ -1,6 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { Trip, Settlement } from '../models/trip.model';
 import { StorageService } from './storage.service';
+import { calculateSettlements } from '../utils/trip-calculator';
 
 @Injectable({ providedIn: 'root' })
 export class TripService {
@@ -33,6 +34,14 @@ export class TripService {
 
   async reload(): Promise<void> {
     this._trips.set(await this.storage.loadTrips());
+  }
+
+  /** Persist edits to a trip's expenses/members and re-derive its settlement plan. */
+  async updateTrip(trip: Trip): Promise<void> {
+    const settlements = calculateSettlements(trip.members, trip.expenses);
+    const updated: Trip = { ...trip, settlements };
+    await this.storage.saveTrip(updated);
+    this._trips.update(ts => ts.map(t => t.id === updated.id ? updated : t));
   }
 
   async toggleSettlementPaid(tripId: string, index: number): Promise<void> {

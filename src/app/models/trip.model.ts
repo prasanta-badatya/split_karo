@@ -1,6 +1,7 @@
 export interface TripMember {
   id: string;
   name: string;
+  upiId?: string;       // optional UPI VPA for collecting settlements
 }
 
 export interface TripExpense {
@@ -9,6 +10,7 @@ export interface TripExpense {
   amount: number;
   paidBy: string;       // member id
   splitAmong: string[]; // member ids — equal split only among these
+  date?: string;        // ISO yyyy-mm-dd of actual spend (defaults to trip.createdAt)
 }
 
 export interface Settlement {

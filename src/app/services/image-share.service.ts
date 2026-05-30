@@ -66,7 +66,8 @@ export class ImageShareService {
   private computeHeight(g: Group): number {
     const expenseRows = 1
       + (g.result.totalRation    > 0 ? 1 : 0)
-      + (g.result.totalVegetable > 0 ? 1 : 0);
+      + (g.result.totalVegetable > 0 ? 1 : 0)
+      + (g.expenses.extraItems?.filter(i => i.amount > 0).length ?? 0);
     const hasPaid = g.result.shares.some(s => s.personalExpensePaid > 0);
     const rowH = 68 + (hasPaid ? 16 : 0);
     return (
@@ -165,6 +166,9 @@ export class ImageShareService {
     ];
     if (g.result.totalRation    > 0) rows.push({ emoji: '🛒', label: 'Ration / Kiryana', amount: g.result.totalRation });
     if (g.result.totalVegetable > 0) rows.push({ emoji: '🥦', label: 'Vegetable',         amount: g.result.totalVegetable });
+    for (const item of g.expenses.extraItems ?? []) {
+      if (item.amount > 0) rows.push({ emoji: '🧾', label: item.label || 'Other', amount: item.amount });
+    }
 
     for (const row of rows) {
       // Emoji — separate font for colour emoji

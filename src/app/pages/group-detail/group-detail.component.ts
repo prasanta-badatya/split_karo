@@ -5,9 +5,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { GroupService } from '../../services/group.service';
 import { ImageShareService } from '../../services/image-share.service';
 import { UiService } from '../../services/ui.service';
-import { Group, Member, ExpenseConfig } from '../../models/group.model';
+import { Group, Member, ExpenseConfig, ExtraItem } from '../../models/group.model';
 import { calculateShares } from '../../utils/calculator';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, nanoid } from '../../utils/formatters';
 
 @Component({
   selector: 'app-group-detail',
@@ -118,6 +118,34 @@ import { formatCurrency } from '../../utils/formatters';
               </div>
             </div>
           </div>
+
+          <!-- Other expenses editor -->
+          <div class="px-5 py-4 border-t border-gray-100">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Other Expenses <span class="text-gray-400 normal-case font-normal">· split equally</span></p>
+            <div class="flex flex-wrap gap-1.5 mb-3">
+              <button *ngFor="let p of extraPresets" (click)="addEditExtra(p)"
+                class="px-2.5 py-1 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 bg-gray-50 hover:border-brand-300 hover:text-brand-600 transition-colors">
+                + {{ p }}
+              </button>
+            </div>
+            <div class="space-y-2">
+              <div *ngFor="let item of editExtraItems()" class="flex items-center gap-2">
+                <input type="text" [ngModel]="item.label" (ngModelChange)="updateEditExtra(item.id, 'label', $event)"
+                  placeholder="Item name" class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 min-w-0" />
+                <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden w-28 flex-shrink-0 bg-white">
+                  <span class="px-2 py-2 bg-gray-50 border-r border-gray-200 text-gray-400 text-xs">₹</span>
+                  <input type="number" [ngModel]="item.amount" (ngModelChange)="updateEditExtra(item.id, 'amount', +$event)"
+                    placeholder="0" class="flex-1 px-2 py-2 text-sm focus:outline-none min-w-0" />
+                </div>
+                <button (click)="removeEditExtra(item.id)"
+                  class="w-7 h-7 flex items-center justify-center text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors flex-shrink-0">✕</button>
+              </div>
+              <button (click)="addEditExtra()"
+                class="w-full py-2 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 hover:border-brand-300 hover:text-brand-500 text-sm font-semibold transition-colors">
+                + Add custom item
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Edit / Cancel+Save row -->
@@ -178,6 +206,14 @@ import { formatCurrency } from '../../utils/formatters';
             <p class="text-xl font-bold text-gray-900">{{ fmt(g.result.totalVegetable) }}</p>
             <p class="text-xs text-gray-400 mt-0.5">{{ g.expenses.splitMode === 'equal' ? 'Equal split' : 'Day-wise' }}</p>
           </div>
+          <div *ngIf="g.result.totalExtra > 0" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-lg">🧾</span>
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Other</p>
+            </div>
+            <p class="text-xl font-bold text-gray-900">{{ fmt(g.result.totalExtra) }}</p>
+            <p class="text-xs text-gray-400 mt-0.5">Equal split</p>
+          </div>
           <div class="bg-brand-500 rounded-xl shadow-sm p-4 col-span-2 lg:col-span-1">
             <div class="flex items-center gap-2 mb-2">
               <span class="text-lg">💰</span>
@@ -222,6 +258,7 @@ import { formatCurrency } from '../../utils/formatters';
                   <th class="py-3.5 px-5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Member</th>
                   <th *ngIf="isDaywise(g)" class="py-3.5 px-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">📅 Days</th>
                   <th class="py-3.5 px-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">🏠 Rent</th>
+                  <th *ngIf="g.result.totalExtra > 0" class="py-3.5 px-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">🧾 Other</th>
                   <th *ngIf="hasRationOrVeg(g)" class="py-3.5 px-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">🛒🥦 Ration+Veg</th>
                   <th *ngIf="hasPersonalPaid(g)" class="py-3.5 px-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">✅ Paid</th>
                   <th class="py-3.5 px-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wide">Status</th>
@@ -243,6 +280,9 @@ import { formatCurrency } from '../../utils/formatters';
                     {{ share.daysPresent }}d
                   </td>
                   <td class="py-4 px-4 text-right text-gray-500 text-xs font-medium">{{ fmt(share.rentShare) }}</td>
+                  <td *ngIf="g.result.totalExtra > 0" class="py-4 px-4 text-right text-gray-500 text-xs font-medium">
+                    {{ share.extraShare > 0 ? fmt(share.extraShare) : '—' }}
+                  </td>
                   <td *ngIf="hasRationOrVeg(g)" class="py-4 px-4 text-right text-gray-500 text-xs font-medium">
                     {{ share.rationVegShare > 0 ? fmt(share.rationVegShare) : '—' }}
                   </td>
@@ -315,6 +355,10 @@ import { formatCurrency } from '../../utils/formatters';
                   <span>🏠 Rent</span>
                   <span class="font-medium text-gray-700">{{ fmt(share.rentShare) }}</span>
                 </div>
+                <div *ngIf="share.extraShare > 0" class="flex justify-between text-gray-500">
+                  <span>🧾 Other</span>
+                  <span class="font-medium text-gray-700">{{ fmt(share.extraShare) }}</span>
+                </div>
                 <div *ngIf="share.rationVegShare > 0" class="flex justify-between text-gray-500">
                   <span>🛒🥦 Ration + Veggie</span>
                   <span class="font-medium text-gray-700">{{ fmt(share.rationVegShare) }}</span>
@@ -353,7 +397,9 @@ export class GroupDetailComponent implements OnInit {
   editRent      = 0;
   editRation    = 0;
   editVegetable = 0;
-  readonly editMembers = signal<Member[]>([]);
+  readonly editMembers    = signal<Member[]>([]);
+  readonly editExtraItems = signal<ExtraItem[]>([]);
+  readonly extraPresets = ['Electricity', 'WiFi', 'Gas', 'Water', 'Maid', 'Milk', 'Maintenance'];
 
   ngOnInit(): void {
     this.groupId = this.route.snapshot.paramMap.get('id') ?? '';
@@ -367,7 +413,20 @@ export class GroupDetailComponent implements OnInit {
     this.editRation    = g.expenses.rationAmount;
     this.editVegetable = g.expenses.vegetableAmount;
     this.editMembers.set(g.members.map(m => ({ ...m })));
+    this.editExtraItems.set((g.expenses.extraItems ?? []).map(i => ({ ...i })));
     this.isEditing.set(true);
+  }
+
+  addEditExtra(label = ''): void {
+    this.editExtraItems.update(items => [...items, { id: nanoid(), label, amount: 0 }]);
+  }
+
+  updateEditExtra(id: string, key: 'label' | 'amount', value: string | number): void {
+    this.editExtraItems.update(items => items.map(i => (i.id === id ? { ...i, [key]: value } : i)));
+  }
+
+  removeEditExtra(id: string): void {
+    this.editExtraItems.update(items => items.filter(i => i.id !== id));
   }
 
   cancelEdit(): void {
@@ -383,6 +442,9 @@ export class GroupDetailComponent implements OnInit {
       rentAmount:      Number(this.editRent)      || 0,
       rationAmount:    Number(this.editRation)    || 0,
       vegetableAmount: Number(this.editVegetable) || 0,
+      extraItems: this.editExtraItems()
+        .filter(i => i.label.trim() || (Number(i.amount) || 0) > 0)
+        .map(i => ({ ...i, amount: Number(i.amount) || 0 })),
     };
     const members = this.editMembers().map(m => ({
       ...m,

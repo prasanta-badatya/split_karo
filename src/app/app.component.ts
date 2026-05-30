@@ -1,10 +1,12 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs/operators';
 import { QuickSplitComponent } from './components/quick-split/quick-split.component';
 import { UiService } from './services/ui.service';
+import { GroupService } from './services/group.service';
+import { TripService } from './services/trip.service';
 
 type Tab = 'home' | 'groups' | 'trips' | 'settings' | '';
 
@@ -84,6 +86,24 @@ const TAB_ROOTS = ['/', '', '/groups', '/trips', '/settings'];
     <!-- Quick Split overlay (global) -->
     <app-quick-split *ngIf="showQuickSplit()" (close)="showQuickSplit.set(false)"></app-quick-split>
 
+    <!-- ═══ BACKUP REMINDER (tab roots only) ═══ -->
+    <div *ngIf="showNav && needsBackup()"
+      class="fixed bottom-[5.25rem] left-4 right-4 z-40 max-w-sm mx-auto
+             bg-amber-50 border border-amber-200 rounded-2xl shadow-lg px-4 py-3 flex items-center gap-3"
+      style="animation: slideUp 0.3s ease-out">
+      <span class="text-xl flex-shrink-0">🛟</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-semibold text-amber-900">Back up your data</p>
+        <p class="text-xs text-amber-700 mt-0.5">Your data lives only on this device — export a copy.</p>
+      </div>
+      <button (click)="navigate('/settings')"
+        class="flex-shrink-0 bg-amber-400 hover:bg-amber-500 text-amber-900 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
+        Back up
+      </button>
+      <button (click)="backupDismissed.set(true)"
+        class="flex-shrink-0 text-amber-400 hover:text-amber-700 text-lg leading-none">×</button>
+    </div>
+
     <!-- PWA update banner -->
     <div *ngIf="updateReady()"
       class="fixed bottom-20 left-4 right-4 z-50 max-w-sm mx-auto
@@ -149,10 +169,22 @@ export class AppComponent implements OnInit {
   private swUpdate     = inject(SwUpdate, { optional: true });
   private router       = inject(Router);
   readonly ui          = inject(UiService);
+  private groupSvc     = inject(GroupService);
+  private tripSvc      = inject(TripService);
   readonly updateReady  = signal(false);
   readonly showQuickSplit = signal(false);
+  readonly backupDismissed = signal(false);
   activeTab: Tab = 'home';
   showNav = true;
+
+  private readonly hasData = computed(() => this.groupSvc.groups().length + this.tripSvc.trips().length > 0);
+
+  /** True when there's data and no backup in the last 7 days (and not dismissed this session). */
+  needsBackup(): boolean {
+    if (this.backupDismissed() || !this.hasData()) return false;
+    const last = Number(localStorage.getItem('sk_lastBackupAt') || 0);
+    return Date.now() - last > 7 * 24 * 60 * 60 * 1000;
+  }
 
   ngOnInit(): void {
     this.setTab(this.router.url);

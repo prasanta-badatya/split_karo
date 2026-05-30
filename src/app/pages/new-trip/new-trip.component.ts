@@ -12,6 +12,7 @@ interface ExpenseRow {
   amount: number | null;
   paidBy: string;
   splitAmong: Record<string, boolean>;
+  date: string;
 }
 
 @Component({
@@ -67,14 +68,21 @@ interface ExpenseRow {
 
           <div class="space-y-2 mb-3">
             <div *ngFor="let m of members(); let i = index"
-              class="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3">
-              <div class="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center text-xs font-bold text-indigo-600 flex-shrink-0">
-                {{ m.name ? m.name.slice(0,2).toUpperCase() : '?' }}
+              class="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center text-xs font-bold text-indigo-600 flex-shrink-0">
+                  {{ m.name ? m.name.slice(0,2).toUpperCase() : '?' }}
+                </div>
+                <input [(ngModel)]="m.name" type="text" placeholder="Member name"
+                  class="flex-1 text-sm font-medium text-gray-900 bg-transparent focus:outline-none placeholder-gray-300" />
+                <button (click)="removeMember(i)" *ngIf="members().length > 2"
+                  class="text-gray-200 hover:text-rose-400 transition-colors text-lg leading-none">×</button>
               </div>
-              <input [(ngModel)]="m.name" type="text" placeholder="Member name"
-                class="flex-1 text-sm font-medium text-gray-900 bg-transparent focus:outline-none placeholder-gray-300" />
-              <button (click)="removeMember(i)" *ngIf="members().length > 2"
-                class="text-gray-200 hover:text-rose-400 transition-colors text-lg leading-none">×</button>
+              <div class="flex items-center gap-2 mt-2 pl-11">
+                <span class="text-sm">💸</span>
+                <input [(ngModel)]="m.upiId" type="text" placeholder="UPI ID (optional, for collecting)"
+                  class="flex-1 text-xs text-gray-600 bg-gray-50 border border-gray-100 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-300 placeholder-gray-300" />
+              </div>
             </div>
           </div>
 
@@ -103,7 +111,7 @@ interface ExpenseRow {
               class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
 
               <!-- Row 1: description + amount -->
-              <div class="flex gap-2 mb-3">
+              <div class="flex gap-2 mb-2">
                 <input [(ngModel)]="exp.description" type="text" placeholder="Description (e.g. Hotel)"
                   class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
                 <div class="relative w-28">
@@ -111,6 +119,13 @@ interface ExpenseRow {
                   <input [(ngModel)]="exp.amount" type="number" placeholder="0" min="0"
                     class="w-full border border-gray-200 rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
                 </div>
+              </div>
+
+              <!-- Row 1b: date -->
+              <div class="flex items-center gap-2 mb-3">
+                <span class="text-xs font-semibold text-gray-400 uppercase tracking-wide">📅 Date</span>
+                <input [(ngModel)]="exp.date" type="date"
+                  class="border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-400" />
               </div>
 
               <!-- Row 2: paid by -->
@@ -176,9 +191,9 @@ export class NewTripComponent {
   readonly saving   = signal(false);
   tripName = '';
 
-  readonly members = signal<{ id: string; name: string }[]>([
-    { id: crypto.randomUUID(), name: '' },
-    { id: crypto.randomUUID(), name: '' },
+  readonly members = signal<{ id: string; name: string; upiId: string }[]>([
+    { id: crypto.randomUUID(), name: '', upiId: '' },
+    { id: crypto.randomUUID(), name: '', upiId: '' },
   ]);
 
   readonly expenseRows = signal<ExpenseRow[]>([this.blankRow()]);
@@ -190,7 +205,7 @@ export class NewTripComponent {
   );
 
   addMember(): void {
-    this.members.update(ms => [...ms, { id: crypto.randomUUID(), name: '' }]);
+    this.members.update(ms => [...ms, { id: crypto.randomUUID(), name: '', upiId: '' }]);
   }
 
   removeMember(i: number): void {
@@ -218,6 +233,7 @@ export class NewTripComponent {
       amount: null,
       paidBy: '',
       splitAmong: {},
+      date: new Date().toISOString().slice(0, 10),
     };
   }
 
@@ -250,13 +266,18 @@ export class NewTripComponent {
   async save(): Promise<void> {
     this.saving.set(true);
     const validM = this.validMembers();
-    const members: TripMember[] = validM.map(m => ({ id: m.id, name: m.name.trim() }));
+    const members: TripMember[] = validM.map(m => ({
+      id: m.id,
+      name: m.name.trim(),
+      ...(m.upiId.trim() ? { upiId: m.upiId.trim() } : {}),
+    }));
     const expenses: TripExpense[] = this.expenseRows().map(e => ({
       id: e.id,
       description: e.description.trim(),
       amount: Number(e.amount),
       paidBy: e.paidBy,
       splitAmong: Object.entries(e.splitAmong).filter(([, v]) => v).map(([k]) => k),
+      date: e.date || new Date().toISOString().slice(0, 10),
     }));
     const settlements = calculateSettlements(members, expenses);
     const trip: Trip = {

@@ -2,14 +2,16 @@ import { ExpenseConfig, Member, MemberShare, CalculationResult } from '../models
 
 export function calculateShares(expenses: ExpenseConfig, members: Member[]): CalculationResult {
   const { rentAmount, rationAmount, vegetableAmount, splitMode } = expenses;
-  const grandTotal = rentAmount + rationAmount + vegetableAmount;
+  const totalExtra = (expenses.extraItems ?? []).reduce((s, i) => s + (Number(i.amount) || 0), 0);
+  const grandTotal = rentAmount + rationAmount + vegetableAmount + totalExtra;
 
   if (members.length === 0) {
-    return { shares: [], totalRent: rentAmount, totalRation: rationAmount, totalVegetable: vegetableAmount, grandTotal, verificationOk: true, calculatedAt: new Date().toISOString() };
+    return { shares: [], totalRent: rentAmount, totalRation: rationAmount, totalVegetable: vegetableAmount, totalExtra, grandTotal, verificationOk: true, calculatedAt: new Date().toISOString() };
   }
 
-  // 1. Rent — always equal among ALL members
-  const rentShare = rentAmount / members.length;
+  // 1. Rent + extra items — always equal among ALL members
+  const rentShare  = rentAmount / members.length;
+  const extraShare = totalExtra / members.length;
 
   // 2. Ration + Veggie — combined pool, one mode
   const pool = rationAmount + vegetableAmount;
@@ -31,12 +33,13 @@ export function calculateShares(expenses: ExpenseConfig, members: Member[]): Cal
   // 3. Build shares
   const shares: MemberShare[] = members.map(m => {
     const rv = rationVegMap[m.id] ?? 0;
-    const gross = rentShare + rv;
+    const gross = rentShare + extraShare + rv;
     return {
       memberId: m.id,
       memberName: m.name,
       daysPresent: m.daysPresent,
       rentShare,
+      extraShare,
       rationVegShare: rv,
       personalExpensePaid: m.personalExpensePaid,
       grossTotal: gross,
@@ -53,6 +56,7 @@ export function calculateShares(expenses: ExpenseConfig, members: Member[]): Cal
     totalRent: rentAmount,
     totalRation: rationAmount,
     totalVegetable: vegetableAmount,
+    totalExtra,
     grandTotal,
     verificationOk,
     calculatedAt: new Date().toISOString(),

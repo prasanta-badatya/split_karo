@@ -7,6 +7,7 @@ const defaultExpenses: ExpenseConfig = {
   rationAmount: 0,
   vegetableAmount: 0,
   splitMode: 'equal',
+  extraItems: [],
 };
 
 const defaultState: FormState = {

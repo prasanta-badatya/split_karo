@@ -1,10 +1,17 @@
 export type SplitMode = 'equal' | 'daywise';
 
+export interface ExtraItem {
+  id: string;
+  label: string;
+  amount: number;
+}
+
 export interface ExpenseConfig {
   rentAmount: number;
   rationAmount: number;
   vegetableAmount: number;
   splitMode: SplitMode;
+  extraItems?: ExtraItem[];
 }
 
 export interface Member {
@@ -20,6 +27,7 @@ export interface MemberShare {
   memberName: string;
   daysPresent: number;
   rentShare: number;
+  extraShare: number;
   rationVegShare: number;
   personalExpensePaid: number;
   grossTotal: number;
@@ -31,6 +39,7 @@ export interface CalculationResult {
   totalRent: number;
   totalRation: number;
   totalVegetable: number;
+  totalExtra: number;
   grandTotal: number;
   verificationOk: boolean;
   calculatedAt: string;

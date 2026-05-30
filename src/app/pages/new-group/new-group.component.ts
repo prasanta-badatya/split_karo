@@ -7,7 +7,7 @@ import { GroupService } from '../../services/group.service';
 import { UiService } from '../../services/ui.service';
 import { calculateShares } from '../../utils/calculator';
 import { nanoid, formatCurrency } from '../../utils/formatters';
-import { Member, ExpenseConfig, SplitMode } from '../../models/group.model';
+import { Member, ExpenseConfig, SplitMode, ExtraItem } from '../../models/group.model';
 
 @Component({
   selector: 'app-new-group',
@@ -257,6 +257,49 @@ import { Member, ExpenseConfig, SplitMode } from '../../models/group.model';
               </div>
             </div>
 
+            <!-- ── Other Expenses (custom items) ── -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden anim-fade-up anim-d1 mt-3">
+              <div class="flex items-center justify-between bg-gray-50 border-b border-gray-100 px-4 py-2.5">
+                <span class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Other Expenses</span>
+                <span class="text-xs text-gray-400">split equally among all</span>
+              </div>
+
+              <!-- Preset chips -->
+              <div class="px-4 pt-3 flex flex-wrap gap-1.5">
+                <button *ngFor="let p of extraPresets" (click)="addExtraItem(p)"
+                  class="px-2.5 py-1 rounded-lg text-xs font-semibold border border-gray-200 text-gray-600 bg-gray-50 hover:border-brand-300 hover:text-brand-600 transition-colors">
+                  + {{ p }}
+                </button>
+              </div>
+
+              <!-- Item rows -->
+              <div class="px-4 py-3 space-y-2">
+                <div *ngFor="let item of extraItems(); trackBy: trackExtra" class="flex items-center gap-2">
+                  <div class="w-8 h-8 bg-violet-50 rounded-lg flex items-center justify-center text-base flex-shrink-0">🧾</div>
+                  <input type="text"
+                    [ngModel]="item.label"
+                    (ngModelChange)="updateExtraItem(item.id, 'label', $event)"
+                    placeholder="Item name (e.g. Electricity)"
+                    class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 min-w-0" />
+                  <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-brand-300 w-28 flex-shrink-0">
+                    <span class="px-2 py-2 bg-gray-50 border-r border-gray-200 text-gray-400 text-xs">₹</span>
+                    <input type="number" inputmode="decimal"
+                      [ngModel]="item.amount"
+                      (ngModelChange)="updateExtraItem(item.id, 'amount', +$event)"
+                      placeholder="0"
+                      class="flex-1 px-2 py-2 text-sm focus:outline-none min-w-0 font-medium" />
+                  </div>
+                  <button (click)="removeExtraItem(item.id)"
+                    class="w-7 h-7 flex items-center justify-center text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors flex-shrink-0">✕</button>
+                </div>
+
+                <button (click)="addExtraItem()"
+                  class="w-full py-2.5 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 hover:border-brand-300 hover:text-brand-500 text-sm font-semibold transition-colors">
+                  + Add custom item
+                </button>
+              </div>
+            </div>
+
             <!-- Live Grand Total -->
             <div *ngIf="liveTotal() > 0"
               class="mt-3 bg-gradient-to-r from-brand-500 to-brand-600 rounded-2xl p-4 text-white flex items-center justify-between shadow-md shadow-brand-200 anim-scale-in">
@@ -268,6 +311,7 @@ import { Member, ExpenseConfig, SplitMode } from '../../models/group.model';
                 <p *ngIf="form().expenses.rentAmount > 0">🏠 {{ fmt(form().expenses.rentAmount) }}</p>
                 <p *ngIf="form().expenses.rationAmount > 0">🛒 {{ fmt(form().expenses.rationAmount) }}</p>
                 <p *ngIf="form().expenses.vegetableAmount > 0">🥦 {{ fmt(form().expenses.vegetableAmount) }}</p>
+                <p *ngFor="let item of extraItems()" >🧾 {{ fmt(item.amount) }}</p>
               </div>
             </div>
           </ng-container>
@@ -414,6 +458,11 @@ import { Member, ExpenseConfig, SplitMode } from '../../models/group.model';
                 <p class="text-xs text-gray-400 mb-1">Vegetable</p>
                 <p class="font-bold text-gray-900 text-sm">{{ fmt(result().totalVegetable) }}</p>
               </div>
+              <div *ngIf="result().totalExtra > 0" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 text-center">
+                <p class="text-lg mb-1">🧾</p>
+                <p class="text-xs text-gray-400 mb-1">Other</p>
+                <p class="font-bold text-gray-900 text-sm">{{ fmt(result().totalExtra) }}</p>
+              </div>
               <div class="bg-brand-500 rounded-xl shadow-sm p-4 text-center col-span-2 sm:col-span-1">
                 <p class="text-lg mb-1">💰</p>
                 <p class="text-xs text-brand-200 mb-1">Grand Total</p>
@@ -439,6 +488,7 @@ import { Member, ExpenseConfig, SplitMode } from '../../models/group.model';
                       <th class="py-3 px-5 text-left text-xs font-semibold text-gray-500">Member</th>
                       <th *ngIf="isDaywise()" class="py-3 px-4 text-center text-xs font-semibold text-gray-500">📅 Days</th>
                       <th class="py-3 px-4 text-right text-xs font-semibold text-gray-500">🏠 Rent</th>
+                      <th *ngIf="result().totalExtra > 0" class="py-3 px-4 text-right text-xs font-semibold text-gray-500">🧾 Other</th>
                       <th *ngIf="hasRationOrVeg()" class="py-3 px-4 text-right text-xs font-semibold text-gray-500">🛒🥦 Ration+Veg</th>
                       <th *ngIf="hasAnyPersonalPaid()" class="py-3 px-4 text-right text-xs font-semibold text-gray-500">✅ Paid</th>
                       <th class="py-3 px-5 text-right text-xs font-semibold text-gray-700">Pay Amount</th>
@@ -458,6 +508,9 @@ import { Member, ExpenseConfig, SplitMode } from '../../models/group.model';
                         {{ share.daysPresent }}d
                       </td>
                       <td class="py-3.5 px-4 text-right text-gray-500 text-xs">{{ fmt(share.rentShare) }}</td>
+                      <td *ngIf="result().totalExtra > 0" class="py-3.5 px-4 text-right text-gray-500 text-xs">
+                        {{ share.extraShare > 0 ? fmt(share.extraShare) : '—' }}
+                      </td>
                       <td *ngIf="hasRationOrVeg()" class="py-3.5 px-4 text-right text-gray-500 text-xs">
                         {{ share.rationVegShare > 0 ? fmt(share.rationVegShare) : '—' }}
                       </td>
@@ -555,8 +608,11 @@ export class NewGroupComponent {
   readonly result = computed(() => calculateShares(this.form().expenses, this.form().members));
   readonly liveTotal = computed(() => {
     const e = this.form().expenses;
-    return e.rentAmount + e.rationAmount + e.vegetableAmount;
+    const extra = (e.extraItems ?? []).reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    return e.rentAmount + e.rationAmount + e.vegetableAmount + extra;
   });
+
+  readonly extraPresets = ['Electricity', 'WiFi', 'Gas', 'Water', 'Maid', 'Milk', 'Maintenance'];
 
   readonly cycleLabel = computed(() => {
     const { fromDate, toDate } = this.form();
@@ -657,6 +713,25 @@ export class NewGroupComponent {
     this.formService.setExpenses({ ...this.form().expenses, splitMode: mode });
   }
 
+  extraItems(): ExtraItem[] {
+    return this.form().expenses.extraItems ?? [];
+  }
+
+  addExtraItem(label = ''): void {
+    const items = [...this.extraItems(), { id: nanoid(), label, amount: 0 }];
+    this.formService.setExpenses({ ...this.form().expenses, extraItems: items });
+  }
+
+  updateExtraItem(id: string, key: 'label' | 'amount', value: string | number): void {
+    const items = this.extraItems().map(i => (i.id === id ? { ...i, [key]: value } : i));
+    this.formService.setExpenses({ ...this.form().expenses, extraItems: items });
+  }
+
+  removeExtraItem(id: string): void {
+    const items = this.extraItems().filter(i => i.id !== id);
+    this.formService.setExpenses({ ...this.form().expenses, extraItems: items });
+  }
+
   addMember(): void {
     this.formService.addMember();
     setTimeout(() => {
@@ -676,4 +751,5 @@ export class NewGroupComponent {
   hasAnyPersonalPaid(): boolean { return this.form().members.some(m => m.personalExpensePaid > 0); }
 
   trackMember(_: number, member: Member): string { return member.id; }
+  trackExtra(_: number, item: ExtraItem): string { return item.id; }
 }
