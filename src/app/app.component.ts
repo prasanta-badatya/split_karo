@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
@@ -119,8 +119,8 @@ const TAB_ROOTS = ['/', '', '/groups', '/trips', '/settings'];
     <!-- Quick Split overlay (global) -->
     <app-quick-split *ngIf="showQuickSplit()" (close)="showQuickSplit.set(false)"></app-quick-split>
 
-    <!-- ═══ BACKUP REMINDER (tab roots only) ═══ -->
-    <div *ngIf="showNav && needsBackup()"
+    <!-- ═══ BACKUP REMINDER (once per day, tab roots only) ═══ -->
+    <div *ngIf="showNav && backupNudge()"
       class="fixed bottom-[5.25rem] left-4 right-4 z-40 max-w-sm mx-auto
              bg-amber-50 border border-amber-200 rounded-2xl shadow-lg px-4 py-3 flex items-center gap-3"
       style="animation: slideUp 0.3s ease-out">
@@ -129,11 +129,11 @@ const TAB_ROOTS = ['/', '', '/groups', '/trips', '/settings'];
         <p class="text-sm font-semibold text-amber-900">Back up your data</p>
         <p class="text-xs text-amber-700 mt-0.5">Your data lives only on this device — export a copy.</p>
       </div>
-      <button (click)="navigate('/settings')"
+      <button (click)="backupNudge.set(false); navigate('/settings')"
         class="flex-shrink-0 bg-amber-400 hover:bg-amber-500 text-amber-900 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
         Back up
       </button>
-      <button (click)="backupDismissed.set(true)"
+      <button (click)="backupNudge.set(false)"
         class="flex-shrink-0 text-amber-400 hover:text-amber-700 text-lg leading-none">×</button>
     </div>
 
@@ -214,19 +214,33 @@ export class AppComponent implements OnInit {
   private theme        = inject(ThemeService);
   readonly updateReady  = signal(false);
   readonly showQuickSplit = signal(false);
-  readonly backupDismissed = signal(false);
+  readonly backupNudge = signal(false);
   readonly pinEntry = signal('');
   readonly pinError = signal(false);
   activeTab: Tab = 'home';
   showNav = true;
 
-  private readonly hasData = computed(() => this.groupSvc.groups().length + this.tripSvc.trips().length > 0);
+  private nudgeChecked = false;
 
-  /** True when there's data and no backup in the last 7 days (and not dismissed this session). */
-  needsBackup(): boolean {
-    if (this.backupDismissed() || !this.hasData()) return false;
-    const last = Number(localStorage.getItem('sk_lastBackupAt') || 0);
-    return Date.now() - last > 7 * 24 * 60 * 60 * 1000;
+  constructor() {
+    // Decide ONCE per app open (after data loads) whether to show the backup nudge.
+    // Snoozes 24h via localStorage so it doesn't reappear on every refresh/navigation.
+    effect(() => {
+      const loading = this.groupSvc.isLoading() || this.tripSvc.isLoading();
+      const count = this.groupSvc.groups().length + this.tripSvc.trips().length;
+      if (loading || this.nudgeChecked) return;
+      this.nudgeChecked = true;
+      if (count === 0) return;
+      const now = Date.now();
+      const lastBackup = Number(localStorage.getItem('sk_lastBackupAt') || 0);
+      const lastNudge  = Number(localStorage.getItem('sk_backupNudgedAt') || 0);
+      const noRecentBackup = now - lastBackup > 7 * 24 * 60 * 60 * 1000;
+      const notNudgedToday = now - lastNudge > 24 * 60 * 60 * 1000;
+      if (noRecentBackup && notNudgedToday) {
+        this.backupNudge.set(true);
+        localStorage.setItem('sk_backupNudgedAt', String(now));
+      }
+    }, { allowSignalWrites: true });
   }
 
   ngOnInit(): void {
