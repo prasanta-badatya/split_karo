@@ -1,10 +1,13 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { StorageService } from '../../services/storage.service';
 import { GroupService } from '../../services/group.service';
 import { TripService } from '../../services/trip.service';
 import { UiService } from '../../services/ui.service';
+import { ThemeService } from '../../services/theme.service';
+import { LockService } from '../../services/lock.service';
 import { Group } from '../../models/group.model';
 import { Trip } from '../../models/trip.model';
 
@@ -19,7 +22,7 @@ interface BackupFile {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="min-h-screen bg-slate-50 flex flex-col pb-24">
 
@@ -81,6 +84,47 @@ interface BackupFile {
           </p>
         </section>
 
+        <!-- ═══ APPEARANCE ═══ -->
+        <section>
+          <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-1">Appearance</h2>
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <button (click)="theme.toggle()" class="w-full flex items-center gap-4 px-4 py-4 text-left hover:bg-gray-50 transition-colors">
+              <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+                {{ theme.theme() === 'dark' ? '🌙' : '☀️' }}
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-gray-900 text-sm">Dark mode</p>
+                <p class="text-xs text-gray-400 mt-0.5">{{ theme.theme() === 'dark' ? 'On' : 'Off' }}</p>
+              </div>
+              <!-- toggle -->
+              <span class="w-11 h-6 rounded-full flex-shrink-0 relative transition-colors"
+                [ngClass]="theme.theme() === 'dark' ? 'bg-brand-500' : 'bg-gray-200'">
+                <span class="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all"
+                  [ngClass]="theme.theme() === 'dark' ? 'left-[1.375rem]' : 'left-0.5'"></span>
+              </span>
+            </button>
+          </div>
+        </section>
+
+        <!-- ═══ PRIVACY / APP LOCK ═══ -->
+        <section>
+          <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-1">Privacy</h2>
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm">
+            <div class="w-full flex items-center gap-4 px-4 py-4">
+              <div class="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">🔒</div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-gray-900 text-sm">App Lock (PIN)</p>
+                <p class="text-xs text-gray-400 mt-0.5">{{ lock.hasPin() ? 'On — asks for a PIN on open' : 'Off — anyone can open the app' }}</p>
+              </div>
+              <button *ngIf="!lock.hasPin()" (click)="openSetPin()"
+                class="flex-shrink-0 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">Set PIN</button>
+              <button *ngIf="lock.hasPin()" (click)="removePin()"
+                class="flex-shrink-0 border border-gray-200 text-gray-500 hover:bg-gray-50 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">Remove</button>
+            </div>
+          </div>
+          <p class="text-xs text-gray-400 mt-2 px-1">A screen lock for casual privacy. Keep a backup — there's no PIN recovery.</p>
+        </section>
+
         <!-- ═══ DANGER ZONE ═══ -->
         <section>
           <h2 class="text-xs font-semibold text-rose-400 uppercase tracking-wide mb-3 px-1">Danger Zone</h2>
@@ -110,8 +154,27 @@ interface BackupFile {
         </section>
 
       </div>
+
+      <!-- ═══ SET PIN MODAL ═══ -->
+      <div *ngIf="settingPin()" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" (click)="cancelSetPin()"></div>
+        <div class="relative bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-sm p-6"
+          style="animation: sheetUp 0.25s cubic-bezier(.32,.72,0,1)">
+          <div class="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">🔒</div>
+          <h3 class="text-lg font-bold text-gray-900 text-center">{{ pinStep() === 1 ? 'Choose a 4-digit PIN' : 'Confirm your PIN' }}</h3>
+          <p class="text-sm text-gray-500 text-center mt-1">{{ pinStep() === 1 ? 'You\\'ll enter this each time you open the app.' : 'Type it once more to confirm.' }}</p>
+          <input #pinInput type="tel" inputmode="numeric" maxlength="4"
+            [(ngModel)]="pinValue" (ngModelChange)="onPinInput($event)"
+            class="mt-5 w-full text-center text-3xl tracking-[0.6em] font-bold border-2 border-gray-200 focus:border-brand-400 rounded-2xl py-3 focus:outline-none" />
+          <p *ngIf="pinMsg()" class="text-center text-xs text-rose-500 font-semibold mt-2">{{ pinMsg() }}</p>
+          <button (click)="cancelSetPin()" class="mt-5 w-full text-gray-400 text-sm py-2">Cancel</button>
+        </div>
+      </div>
     </div>
   `,
+  styles: [`
+    @keyframes sheetUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  `]
 })
 export class SettingsComponent {
   readonly router    = inject(Router);
@@ -119,10 +182,70 @@ export class SettingsComponent {
   private groupSvc   = inject(GroupService);
   private tripSvc    = inject(TripService);
   private ui         = inject(UiService);
+  readonly theme     = inject(ThemeService);
+  readonly lock      = inject(LockService);
 
   readonly groups = this.groupSvc.groups;
   readonly trips  = this.tripSvc.trips;
   readonly isEmpty = computed(() => this.groups().length === 0 && this.trips().length === 0);
+
+  // Set-PIN modal state
+  readonly settingPin = signal(false);
+  readonly pinStep    = signal<1 | 2>(1);
+  readonly pinMsg     = signal('');
+  pinValue = '';
+  private firstPin = '';
+
+  openSetPin(): void {
+    this.settingPin.set(true);
+    this.pinStep.set(1);
+    this.pinValue = '';
+    this.firstPin = '';
+    this.pinMsg.set('');
+  }
+
+  cancelSetPin(): void {
+    this.settingPin.set(false);
+    this.pinValue = '';
+    this.firstPin = '';
+  }
+
+  onPinInput(v: string): void {
+    const digits = (v || '').replace(/\D/g, '').slice(0, 4);
+    this.pinValue = digits;
+    this.pinMsg.set('');
+    if (digits.length !== 4) return;
+
+    if (this.pinStep() === 1) {
+      this.firstPin = digits;
+      this.pinStep.set(2);
+      this.pinValue = '';
+    } else {
+      if (digits === this.firstPin) {
+        this.lock.setPin(digits).then(() => {
+          this.settingPin.set(false);
+          this.ui.toast('App lock enabled', '🔒');
+        });
+      } else {
+        this.pinMsg.set("PINs didn't match — start again");
+        this.pinStep.set(1);
+        this.pinValue = '';
+        this.firstPin = '';
+      }
+    }
+  }
+
+  async removePin(): Promise<void> {
+    const ok = await this.ui.confirm({
+      title: 'Remove app lock?',
+      message: 'The app will open without asking for a PIN.',
+      confirmText: 'Remove',
+      danger: true,
+    });
+    if (!ok) return;
+    this.lock.removePin();
+    this.ui.toast('App lock removed');
+  }
 
   exportData(): void {
     const backup: BackupFile = {

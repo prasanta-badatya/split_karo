@@ -7,6 +7,8 @@ import { QuickSplitComponent } from './components/quick-split/quick-split.compon
 import { UiService } from './services/ui.service';
 import { GroupService } from './services/group.service';
 import { TripService } from './services/trip.service';
+import { LockService } from './services/lock.service';
+import { ThemeService } from './services/theme.service';
 
 type Tab = 'home' | 'groups' | 'trips' | 'settings' | '';
 
@@ -18,6 +20,37 @@ const TAB_ROOTS = ['/', '', '/groups', '/trips', '/settings'];
   standalone: true,
   imports: [CommonModule, RouterOutlet, QuickSplitComponent],
   template: `
+    <!-- ═══ LOCK SCREEN ═══ -->
+    <div *ngIf="lock.isLocked()"
+      class="fixed inset-0 z-[70] bg-gradient-to-br from-brand-600 to-indigo-700 flex flex-col items-center justify-center px-8 select-none">
+      <div class="w-16 h-16 bg-white/15 rounded-2xl flex items-center justify-center mb-5">
+        <span class="text-3xl">🔒</span>
+      </div>
+      <h1 class="text-white font-bold text-lg">Split Karo is locked</h1>
+      <p class="text-brand-200 text-sm mt-1 mb-7">Enter your PIN to continue</p>
+
+      <!-- PIN dots -->
+      <div class="flex gap-3 mb-9" [class.shake]="pinError()">
+        <div *ngFor="let i of [0,1,2,3]"
+          class="w-4 h-4 rounded-full border-2 transition-colors"
+          [ngClass]="pinError() ? 'border-rose-300 bg-rose-300'
+            : pinEntry().length > i ? 'border-white bg-white' : 'border-white/40'"></div>
+      </div>
+
+      <!-- Keypad -->
+      <div class="grid grid-cols-3 gap-4 w-full max-w-[16rem]">
+        <button *ngFor="let n of ['1','2','3','4','5','6','7','8','9']" (click)="pressDigit(n)"
+          class="h-16 rounded-2xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-2xl font-semibold transition-colors">
+          {{ n }}
+        </button>
+        <span></span>
+        <button (click)="pressDigit('0')"
+          class="h-16 rounded-2xl bg-white/10 hover:bg-white/20 active:bg-white/30 text-white text-2xl font-semibold transition-colors">0</button>
+        <button (click)="pressBack()"
+          class="h-16 rounded-2xl text-white/70 hover:text-white text-2xl transition-colors flex items-center justify-center">⌫</button>
+      </div>
+    </div>
+
     <router-outlet></router-outlet>
 
     <!-- ═══ GLOBAL BOTTOM NAV (tab roots only) ═══ -->
@@ -163,6 +196,12 @@ const TAB_ROOTS = ['/', '', '/groups', '/trips', '/settings'];
       from { transform: translateY(40px); opacity: 0; }
       to   { transform: translateY(0);    opacity: 1; }
     }
+    @keyframes shakeX {
+      0%,100% { transform: translateX(0); }
+      20%,60% { transform: translateX(-8px); }
+      40%,80% { transform: translateX(8px); }
+    }
+    .shake { animation: shakeX 0.4s ease; }
   `]
 })
 export class AppComponent implements OnInit {
@@ -171,9 +210,13 @@ export class AppComponent implements OnInit {
   readonly ui          = inject(UiService);
   private groupSvc     = inject(GroupService);
   private tripSvc      = inject(TripService);
+  readonly lock        = inject(LockService);
+  private theme        = inject(ThemeService);
   readonly updateReady  = signal(false);
   readonly showQuickSplit = signal(false);
   readonly backupDismissed = signal(false);
+  readonly pinEntry = signal('');
+  readonly pinError = signal(false);
   activeTab: Tab = 'home';
   showNav = true;
 
@@ -187,6 +230,8 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.theme.apply();
+    this.lock.init();
     this.setTab(this.router.url);
 
     this.router.events
@@ -214,4 +259,27 @@ export class AppComponent implements OnInit {
   navigate(path: string): void { this.router.navigate([path]); }
 
   applyUpdate(): void { document.location.reload(); }
+
+  pressDigit(d: string): void {
+    if (this.pinEntry().length >= 4) return;
+    const next = this.pinEntry() + d;
+    this.pinEntry.set(next);
+    this.pinError.set(false);
+    if (next.length === 4) this.tryUnlock(next);
+  }
+
+  pressBack(): void {
+    this.pinError.set(false);
+    this.pinEntry.update(p => p.slice(0, -1));
+  }
+
+  private async tryUnlock(pin: string): Promise<void> {
+    const ok = await this.lock.unlock(pin);
+    if (ok) {
+      this.pinEntry.set('');
+    } else {
+      this.pinError.set(true);
+      setTimeout(() => this.pinEntry.set(''), 500);
+    }
+  }
 }
