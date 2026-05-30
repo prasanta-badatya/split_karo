@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1780159084034,
+  "timestamp": 1780159512718,
   "index": "/split_karo/index.html",
   "assetGroups": [
     {
@@ -11,11 +11,11 @@
         "ignoreVary": true
       },
       "urls": [
-        "/split_karo/197.5491b04c8ca23941.js",
+        "/split_karo/197.6d5918cc30bff277.js",
         "/split_karo/328.18922ba58a399f26.js",
-        "/split_karo/47.7760e778e9673c69.js",
+        "/split_karo/47.8a3ee4df6c27c0f6.js",
         "/split_karo/545.42685ad6c65930f7.js",
-        "/split_karo/627.9ea8b01b39cf1359.js",
+        "/split_karo/627.de410f4f8b022d17.js",
         "/split_karo/651.9d32a38d526727d5.js",
         "/split_karo/699.c0a5db4723bb89d7.js",
         "/split_karo/800.d071234d77ae9254.js",
@@ -25,8 +25,8 @@
         "/split_karo/main.ed1b21699af2d7c5.js",
         "/split_karo/manifest.webmanifest",
         "/split_karo/polyfills.fd3756c76fea0602.js",
-        "/split_karo/runtime.fa88d1785495fba2.js",
-        "/split_karo/styles.cfc995a9264528d4.css"
+        "/split_karo/runtime.7f72d39913fc5641.js",
+        "/split_karo/styles.8d1e1a25be3a6c76.css"
       ],
       "patterns": []
     },
@@ -62,11 +62,11 @@
     }
   ],
   "hashTable": {
-    "/split_karo/197.5491b04c8ca23941.js": "a03120a9bbc873380079f1e4f668ffa73a26eded",
+    "/split_karo/197.6d5918cc30bff277.js": "6d7c4f4e2867eddc2a55eeff600cd612e9a3611b",
     "/split_karo/328.18922ba58a399f26.js": "0164cb239bde42fbc3dee03666db131cb2b66df1",
-    "/split_karo/47.7760e778e9673c69.js": "7a9855043b22bd531cb3d870e63a9b9e300fa628",
+    "/split_karo/47.8a3ee4df6c27c0f6.js": "7341e2b89c80d1871df06ceb1634fca7dc66a1b4",
     "/split_karo/545.42685ad6c65930f7.js": "1079bc4f506ff71fbc052ae51a10ecbef303b9f5",
-    "/split_karo/627.9ea8b01b39cf1359.js": "301e7876a52030531e8eeb8db8a33152a17b882d",
+    "/split_karo/627.de410f4f8b022d17.js": "798de0dcdf834556395882f5e7c898580a90ddec",
     "/split_karo/651.9d32a38d526727d5.js": "95c6eb324e801db3dd1937a15d1f890f2bdc6ae8",
     "/split_karo/699.c0a5db4723bb89d7.js": "4e3b997229fd0af5318c12e62949f730e4c82b6b",
     "/split_karo/800.d071234d77ae9254.js": "f7e72ec93b89e1c61e1ae33b642a6a21157c03f1",
@@ -75,12 +75,12 @@
     "/split_karo/common.930f3ea1209d0019.js": "c0679b86556f7166a6b12718c9433f874220b937",
     "/split_karo/favicon.ico": "22f6a4a3bcaafafb0254e0f2fa4ceb89e505e8b2",
     "/split_karo/favicon.svg": "8919dc6f51892b162ab8ff7817cd63f3de4c561e",
-    "/split_karo/index.html": "bbeedf3c1df31b5a303add92acc59c9854ad1384",
+    "/split_karo/index.html": "47383ce529d1f56e2813af4b67d16af18c11cb69",
     "/split_karo/main.ed1b21699af2d7c5.js": "875ac454586e3fc16a54cf6bcfaac5369ec7fc47",
     "/split_karo/manifest.webmanifest": "69340dd4220e43d70303f6d6e2f0da14b4019d0d",
     "/split_karo/polyfills.fd3756c76fea0602.js": "6b3410ff33815de6959f125856b7cd4d6b4f8441",
-    "/split_karo/runtime.fa88d1785495fba2.js": "2d82200dba80bda80d21fdcde38522c5ccc93d52",
-    "/split_karo/styles.cfc995a9264528d4.css": "afb705984d0e55b413542fe46c4272e87fbb555b"
+    "/split_karo/runtime.7f72d39913fc5641.js": "44af415667dbea96fe1368840f96d19eb61575c8",
+    "/split_karo/styles.8d1e1a25be3a6c76.css": "0ead1aa22d7237bd5bd3488da77321690de1791e"
   },
   "navigationUrls": [
     {
