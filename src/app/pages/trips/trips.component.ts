@@ -4,12 +4,13 @@ import { Router } from '@angular/router';
 import { TripService } from '../../services/trip.service';
 import { UiService } from '../../services/ui.service';
 import { ThemeService } from '../../services/theme.service';
+import { ThemeToggleComponent } from '../../components/theme-toggle/theme-toggle.component';
 import { Trip } from '../../models/trip.model';
 
 @Component({
   selector: 'app-trips',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ThemeToggleComponent],
   template: `
     <div class="min-h-screen bg-slate-50 flex flex-col pb-20">
 
@@ -22,11 +23,8 @@ import { Trip } from '../../models/trip.model';
             </div>
             <span class="text-base font-bold text-gray-900">Trips</span>
           </div>
-          <div class="flex items-center gap-1.5">
-            <button (click)="theme.toggle()" title="Toggle dark mode"
-              class="w-9 h-9 rounded-lg flex items-center justify-center text-lg hover:bg-gray-100 transition-colors">
-              {{ theme.theme() === 'dark' ? '☀️' : '🌙' }}
-            </button>
+          <div class="flex items-center gap-2.5">
+            <app-theme-toggle></app-theme-toggle>
             <button (click)="router.navigate(['/trips/new'])"
               class="bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors shadow-sm">
               + New Trip

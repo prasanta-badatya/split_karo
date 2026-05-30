@@ -4,11 +4,12 @@ import { Router } from '@angular/router';
 import { GroupService } from '../../services/group.service';
 import { TripService } from '../../services/trip.service';
 import { ThemeService } from '../../services/theme.service';
+import { ThemeToggleComponent } from '../../components/theme-toggle/theme-toggle.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ThemeToggleComponent],
   template: `
     <div class="min-h-screen bg-white flex flex-col pb-20">
 
@@ -19,11 +20,8 @@ import { ThemeService } from '../../services/theme.service';
             <span class="text-white font-bold text-xs tracking-tight">SK</span>
           </div>
           <span class="text-base font-bold text-gray-900">Split Karo</span>
-          <span class="ml-auto hidden sm:inline text-xs text-gray-400 font-medium mr-2">Free · No signup · Offline</span>
-          <button (click)="theme.toggle()" title="Toggle dark mode"
-            class="ml-auto sm:ml-0 w-9 h-9 rounded-lg flex items-center justify-center text-lg hover:bg-gray-100 transition-colors">
-            {{ theme.theme() === 'dark' ? '☀️' : '🌙' }}
-          </button>
+          <span class="ml-auto hidden sm:inline text-xs text-gray-400 font-medium mr-3">Free · No signup · Offline</span>
+          <app-theme-toggle class="ml-auto sm:ml-0"></app-theme-toggle>
         </div>
       </header>
 

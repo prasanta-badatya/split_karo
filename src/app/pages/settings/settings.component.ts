@@ -8,6 +8,7 @@ import { TripService } from '../../services/trip.service';
 import { UiService } from '../../services/ui.service';
 import { ThemeService } from '../../services/theme.service';
 import { LockService } from '../../services/lock.service';
+import { ThemeToggleComponent } from '../../components/theme-toggle/theme-toggle.component';
 import { Group } from '../../models/group.model';
 import { Trip } from '../../models/trip.model';
 
@@ -22,7 +23,7 @@ interface BackupFile {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ThemeToggleComponent],
   template: `
     <div class="min-h-screen bg-slate-50 flex flex-col pb-24">
 
@@ -88,7 +89,7 @@ interface BackupFile {
         <section>
           <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-1">Appearance</h2>
           <div class="bg-white rounded-2xl border border-gray-100 shadow-sm">
-            <button (click)="theme.toggle()" class="w-full flex items-center gap-4 px-4 py-4 text-left hover:bg-gray-50 transition-colors">
+            <div class="w-full flex items-center gap-4 px-4 py-4">
               <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">
                 {{ theme.theme() === 'dark' ? '🌙' : '☀️' }}
               </div>
@@ -96,13 +97,8 @@ interface BackupFile {
                 <p class="font-semibold text-gray-900 text-sm">Dark mode</p>
                 <p class="text-xs text-gray-400 mt-0.5">{{ theme.theme() === 'dark' ? 'On' : 'Off' }}</p>
               </div>
-              <!-- toggle -->
-              <span class="w-11 h-6 rounded-full flex-shrink-0 relative transition-colors"
-                [ngClass]="theme.theme() === 'dark' ? 'bg-brand-500' : 'bg-gray-200'">
-                <span class="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all"
-                  [ngClass]="theme.theme() === 'dark' ? 'left-[1.375rem]' : 'left-0.5'"></span>
-              </span>
-            </button>
+              <app-theme-toggle></app-theme-toggle>
+            </div>
           </div>
         </section>
 

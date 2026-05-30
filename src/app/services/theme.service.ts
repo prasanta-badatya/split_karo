@@ -21,9 +21,13 @@ export class ThemeService {
   }
 
   set(theme: Theme): void {
+    // Briefly enable global colour transitions so the whole app eases between modes
+    const root = document.documentElement;
+    root.classList.add('theme-transition');
     this.theme.set(theme);
     localStorage.setItem(KEY, theme);
     this.setClass(theme);
+    window.setTimeout(() => root.classList.remove('theme-transition'), 500);
   }
 
   private setClass(theme: Theme): void {
