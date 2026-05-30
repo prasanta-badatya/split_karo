@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { TripService } from '../../services/trip.service';
 import { UiService } from '../../services/ui.service';
+import { ThemeService } from '../../services/theme.service';
 import { Trip } from '../../models/trip.model';
 
 @Component({
@@ -21,10 +22,16 @@ import { Trip } from '../../models/trip.model';
             </div>
             <span class="text-base font-bold text-gray-900">Trips</span>
           </div>
-          <button (click)="router.navigate(['/trips/new'])"
-            class="bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors shadow-sm">
-            + New Trip
-          </button>
+          <div class="flex items-center gap-1.5">
+            <button (click)="theme.toggle()" title="Toggle dark mode"
+              class="w-9 h-9 rounded-lg flex items-center justify-center text-lg hover:bg-gray-100 transition-colors">
+              {{ theme.theme() === 'dark' ? '☀️' : '🌙' }}
+            </button>
+            <button (click)="router.navigate(['/trips/new'])"
+              class="bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors shadow-sm">
+              + New Trip
+            </button>
+          </div>
         </div>
       </header>
 
@@ -158,6 +165,7 @@ export class TripsComponent {
   readonly router     = inject(Router);
   private tripService = inject(TripService);
   private ui          = inject(UiService);
+  readonly theme      = inject(ThemeService);
   readonly trips      = this.tripService.trips;
   readonly isLoading  = this.tripService.isLoading;
 

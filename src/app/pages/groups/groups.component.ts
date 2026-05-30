@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { GroupService } from '../../services/group.service';
 import { UiService } from '../../services/ui.service';
+import { ThemeService } from '../../services/theme.service';
 import { Group } from '../../models/group.model';
 import { formatCurrency } from '../../utils/formatters';
 
@@ -22,10 +23,16 @@ import { formatCurrency } from '../../utils/formatters';
             </div>
             <span class="text-base font-bold text-gray-900">Groups</span>
           </div>
-          <button (click)="goToNew()"
-            class="bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors shadow-sm">
-            + New Group
-          </button>
+          <div class="flex items-center gap-1.5">
+            <button (click)="theme.toggle()" title="Toggle dark mode"
+              class="w-9 h-9 rounded-lg flex items-center justify-center text-lg hover:bg-gray-100 transition-colors">
+              {{ theme.theme() === 'dark' ? '☀️' : '🌙' }}
+            </button>
+            <button (click)="goToNew()"
+              class="bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors shadow-sm">
+              + New Group
+            </button>
+          </div>
         </div>
       </header>
 
@@ -239,6 +246,7 @@ export class GroupsComponent {
   private router = inject(Router);
   private groupService = inject(GroupService);
   private ui = inject(UiService);
+  readonly theme = inject(ThemeService);
   readonly fmt          = formatCurrency;
   readonly groups       = this.groupService.groups;
   readonly isLoading    = this.groupService.isLoading;

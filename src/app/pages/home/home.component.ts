@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { GroupService } from '../../services/group.service';
 import { TripService } from '../../services/trip.service';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-home',
@@ -18,7 +19,11 @@ import { TripService } from '../../services/trip.service';
             <span class="text-white font-bold text-xs tracking-tight">SK</span>
           </div>
           <span class="text-base font-bold text-gray-900">Split Karo</span>
-          <span class="ml-auto text-xs text-gray-400 font-medium">Free · No signup · Offline</span>
+          <span class="ml-auto hidden sm:inline text-xs text-gray-400 font-medium mr-2">Free · No signup · Offline</span>
+          <button (click)="theme.toggle()" title="Toggle dark mode"
+            class="ml-auto sm:ml-0 w-9 h-9 rounded-lg flex items-center justify-center text-lg hover:bg-gray-100 transition-colors">
+            {{ theme.theme() === 'dark' ? '☀️' : '🌙' }}
+          </button>
         </div>
       </header>
 
@@ -190,6 +195,7 @@ export class HomeComponent {
   private router       = inject(Router);
   private groupService = inject(GroupService);
   private tripService  = inject(TripService);
+  readonly theme     = inject(ThemeService);
   readonly groups    = this.groupService.groups;
   readonly trips     = this.tripService.trips;
   readonly isLoading = this.groupService.isLoading;
