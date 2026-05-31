@@ -1,4 +1,4 @@
-import { Component, inject, signal, effect, OnInit } from '@angular/core';
+import { Component, inject, signal, effect, HostListener, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
@@ -299,6 +299,13 @@ export class AppComponent implements OnInit {
   navigate(path: string): void { this.router.navigate([path]); }
 
   applyUpdate(): void { document.location.reload(); }
+
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(e: KeyboardEvent): void {
+    if (!this.lock.isLocked()) return;
+    if (e.key >= '0' && e.key <= '9') { this.pressDigit(e.key); e.preventDefault(); }
+    else if (e.key === 'Backspace') { this.pressBack(); e.preventDefault(); }
+  }
 
   pressDigit(d: string): void {
     if (this.pinEntry().length >= 4) return;

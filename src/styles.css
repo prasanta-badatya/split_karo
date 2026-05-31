@@ -66,6 +66,19 @@ body {
   background-color: #0f172a !important;
 }
 
+/* Form controls in dark mode — make typed text + fields visible */
+.dark { color-scheme: dark; }
+
+.dark input:not([type=checkbox]):not([type=radio]):not([type=range]),
+.dark textarea,
+.dark select {
+  background-color: #0f172a;
+  color: #f1f5f9 !important;
+  border-color: #334155;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #64748b !important; }
+
 .dark ::-webkit-scrollbar-thumb { background: #334155; }
 .dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
