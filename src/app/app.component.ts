@@ -252,11 +252,37 @@ export class AppComponent implements OnInit {
       .pipe(filter(e => e instanceof NavigationEnd))
       .subscribe((e) => this.setTab((e as NavigationEnd).urlAfterRedirects));
 
-    if (!this.swUpdate?.isEnabled) return;
-    this.swUpdate.versionUpdates
+    this.setupAutoUpdate();
+  }
+
+  /**
+   * Keep an installed PWA fresh:
+   *  - check for a new version at startup, every 60s, and whenever the app
+   *    regains focus (reopen / tab switch back)
+   *  - when a new version is ready, activate it and auto-reload the next time
+   *    the app comes to the foreground (the natural "reopen" moment), so users
+   *    don't get stuck on a stale version. A manual banner stays as a fallback.
+   */
+  private setupAutoUpdate(): void {
+    const sw = this.swUpdate;
+    if (!sw?.isEnabled) return;
+
+    sw.versionUpdates
       .pipe(filter((e): e is VersionReadyEvent => e.type === 'VERSION_READY'))
-      .subscribe(() => this.updateReady.set(true));
-    this.swUpdate.checkForUpdate();
+      .subscribe(() => {
+        this.updateReady.set(true);
+        sw.activateUpdate().catch(() => {});
+      });
+
+    const check = () => sw.checkForUpdate().catch(() => {});
+    check();
+    setInterval(check, 60_000);
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') return;
+      if (this.updateReady()) document.location.reload();
+      else check();
+    });
   }
 
   private setTab(url: string): void {
