@@ -20,6 +20,7 @@ export interface Member {
   daysPresent: number;
   includeRationVeg: boolean;
   personalExpensePaid: number;
+  upiId?: string;
 }
 
 export interface MemberShare {

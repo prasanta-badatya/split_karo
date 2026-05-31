@@ -46,6 +46,7 @@ export class GroupFormService {
       daysPresent: 15,
       includeRationVeg: true,
       personalExpensePaid: 0,
+      upiId: '',
     };
     this.form.update(f => ({ ...f, members: [...f.members, newMember] }));
   }

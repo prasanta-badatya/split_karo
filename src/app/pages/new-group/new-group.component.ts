@@ -378,7 +378,7 @@ import { Member, ExpenseConfig, SplitMode, ExtraItem } from '../../models/group.
                 </div>
 
                 <!-- Row 3: Include in Ration+Veggie pool -->
-                <div *ngIf="hasRationOrVeg()">
+                <div *ngIf="hasRationOrVeg()" class="mb-3">
                   <label class="flex items-center gap-2 cursor-pointer select-none">
                     <input type="checkbox"
                       [ngModel]="member.includeRationVeg"
@@ -386,6 +386,16 @@ import { Member, ExpenseConfig, SplitMode, ExtraItem } from '../../models/group.
                       class="w-4 h-4 rounded accent-orange-500 cursor-pointer" />
                     <span class="text-sm text-gray-600 font-medium">🛒🥦 Include in Ration &amp; Veggie</span>
                   </label>
+                </div>
+
+                <!-- Row 4: UPI ID (optional) -->
+                <div class="flex items-center gap-2">
+                  <span class="text-sm">💸</span>
+                  <input type="text"
+                    [ngModel]="member.upiId"
+                    (ngModelChange)="updateMember(member.id, 'upiId', $event)"
+                    placeholder="UPI ID (optional, for collecting)"
+                    class="flex-1 text-xs text-gray-600 bg-gray-50 border border-gray-100 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-300 placeholder-gray-300 min-w-0" />
                 </div>
 
               </div>

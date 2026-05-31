@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TripService } from '../../services/trip.service';
 import { UiService } from '../../services/ui.service';
-import { Trip, TripExpense } from '../../models/trip.model';
+import { Trip, TripExpense, TripMember } from '../../models/trip.model';
 import { buildUpiUri } from '../../utils/upi';
 
 interface ExpenseEdit {
@@ -122,7 +122,10 @@ interface ExpenseEdit {
 
         <!-- ══ MEMBER BALANCES ══ -->
         <section>
-          <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Member Balances</h2>
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Member Balances</h2>
+            <button (click)="openEditMembers()" class="text-xs font-semibold text-brand-600 hover:underline">Edit / add members</button>
+          </div>
           <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div *ngFor="let b of memberBalances(); let last = last"
               class="flex items-center gap-3 px-4 py-3"
@@ -236,6 +239,44 @@ interface ExpenseEdit {
               class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors">Cancel</button>
             <button (click)="saveExpense()" [disabled]="!canSaveExpense()"
               class="flex-1 py-3 rounded-xl bg-brand-500 hover:bg-brand-600 disabled:opacity-40 text-white font-bold text-sm transition-colors">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ EDIT MEMBERS SHEET ═══ -->
+      <div *ngIf="editMembers() as rows" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" (click)="editMembers.set(null)"></div>
+        <div class="relative bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto p-5"
+          style="animation: sheetUp 0.25s cubic-bezier(.32,.72,0,1)">
+          <h3 class="text-lg font-bold text-gray-900 mb-1">Members</h3>
+          <p class="text-xs text-gray-400 mb-4">Add anyone you forgot, or add a UPI ID for collecting.</p>
+
+          <div class="space-y-2 mb-3">
+            <div *ngFor="let m of rows" class="bg-gray-50 rounded-xl p-2.5">
+              <div class="flex items-center gap-2">
+                <input [(ngModel)]="m.name" type="text" placeholder="Member name"
+                  class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 min-w-0" />
+                <button (click)="removeMemberRow(m.id)" *ngIf="rows.length > 1"
+                  class="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors flex-shrink-0">✕</button>
+              </div>
+              <div class="flex items-center gap-2 mt-2">
+                <span class="text-sm">💸</span>
+                <input [(ngModel)]="m.upiId" type="text" placeholder="UPI ID (optional)"
+                  class="flex-1 text-xs text-gray-600 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-400 min-w-0" />
+              </div>
+            </div>
+          </div>
+
+          <button (click)="addMemberRow()"
+            class="w-full py-2.5 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 hover:border-brand-300 hover:text-brand-500 text-sm font-semibold transition-colors mb-4">
+            + Add member
+          </button>
+
+          <div class="flex gap-3">
+            <button (click)="editMembers.set(null)"
+              class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors">Cancel</button>
+            <button (click)="saveMembers()"
+              class="flex-1 py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm transition-colors">Save</button>
           </div>
         </div>
       </div>
@@ -361,6 +402,44 @@ export class TripDetailComponent {
     await this.tripService.updateTrip({ ...t, expenses });
     this.editExp.set(null);
     this.ui.toast('Expense updated', '✅');
+  }
+
+  // ─── Edit / add members ──────────────────────────────────────────
+  readonly editMembers = signal<{ id: string; name: string; upiId: string }[] | null>(null);
+
+  openEditMembers(): void {
+    const t = this.trip();
+    if (!t) return;
+    this.editMembers.set(t.members.map(m => ({ id: m.id, name: m.name, upiId: m.upiId ?? '' })));
+  }
+
+  addMemberRow(): void {
+    this.editMembers.update(rows => rows ? [...rows, { id: crypto.randomUUID(), name: '', upiId: '' }] : rows);
+  }
+
+  removeMemberRow(id: string): void {
+    const t = this.trip();
+    if (t && t.expenses.some(e => e.paidBy === id || e.splitAmong.includes(id))) {
+      this.ui.toast('This member is used in an expense — edit that first', '⚠️');
+      return;
+    }
+    this.editMembers.update(rows => rows ? rows.filter(m => m.id !== id) : rows);
+  }
+
+  async saveMembers(): Promise<void> {
+    const t = this.trip();
+    const rows = this.editMembers();
+    if (!t || !rows) return;
+    const cleaned: TripMember[] = rows
+      .filter(r => r.name.trim())
+      .map(r => ({ id: r.id, name: r.name.trim(), ...(r.upiId.trim() ? { upiId: r.upiId.trim() } : {}) }));
+    if (cleaned.length === 0) { this.ui.toast('Add at least one member', '⚠️'); return; }
+    const ids = new Set(cleaned.map(m => m.id));
+    const stillReferenced = t.expenses.every(e => ids.has(e.paidBy) && e.splitAmong.every(s => ids.has(s)));
+    if (!stillReferenced) { this.ui.toast("Can't remove a member used in an expense", '⚠️'); return; }
+    await this.tripService.updateTrip({ ...t, members: cleaned });
+    this.editMembers.set(null);
+    this.ui.toast('Members updated', '✅');
   }
 
   async deleteExpense(e: TripExpense): Promise<void> {

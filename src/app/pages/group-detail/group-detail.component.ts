@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -8,6 +8,7 @@ import { UiService } from '../../services/ui.service';
 import { Group, Member, ExpenseConfig, ExtraItem } from '../../models/group.model';
 import { calculateShares } from '../../utils/calculator';
 import { formatCurrency, nanoid } from '../../utils/formatters';
+import { buildUpiUri } from '../../utils/upi';
 
 @Component({
   selector: 'app-group-detail',
@@ -94,9 +95,12 @@ import { formatCurrency, nanoid } from '../../utils/formatters';
                 class="border border-gray-100 rounded-xl p-3 bg-gray-50">
                 <div class="flex items-center gap-2 mb-2">
                   <div class="w-7 h-7 bg-brand-100 rounded-lg flex items-center justify-center text-xs font-bold text-brand-600 flex-shrink-0">
-                    {{ m.name.slice(0,2).toUpperCase() || '?' }}
+                    {{ m.name.slice(0,2).toUpperCase() || (i + 1) }}
                   </div>
-                  <span class="font-semibold text-gray-900 text-sm">{{ m.name }}</span>
+                  <input [(ngModel)]="m.name" type="text" placeholder="Member name"
+                    class="flex-1 border border-gray-200 rounded-lg px-2.5 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 min-w-0" />
+                  <button (click)="removeEditMember(m.id)" *ngIf="editMembers().length > 1"
+                    class="w-7 h-7 flex items-center justify-center text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors flex-shrink-0">✕</button>
                 </div>
                 <div class="grid grid-cols-2 gap-2" [ngClass]="g.expenses.splitMode === 'daywise' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'">
                   <div>
@@ -115,8 +119,17 @@ import { formatCurrency, nanoid } from '../../utils/formatters';
                     <label [for]="'irv-' + i" class="text-xs font-medium text-gray-500">Ration & Veggie</label>
                   </div>
                 </div>
+                <div class="flex items-center gap-2 mt-2">
+                  <span class="text-sm">💸</span>
+                  <input [(ngModel)]="m.upiId" type="text" placeholder="UPI ID (optional, for collecting)"
+                    class="flex-1 text-xs text-gray-600 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-400 min-w-0" />
+                </div>
               </div>
             </div>
+            <button (click)="addEditMember()"
+              class="mt-3 w-full py-2.5 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 hover:border-brand-300 hover:text-brand-500 text-sm font-semibold transition-colors">
+              + Add member
+            </button>
           </div>
 
           <!-- Other expenses editor -->
@@ -238,6 +251,40 @@ import { formatCurrency, nanoid } from '../../utils/formatters';
             <p class="text-base font-bold text-brand-600 mt-0.5">
               {{ fmt(perPersonAvg(g)) }} <span class="text-xs font-normal text-gray-400">per member (Rent + Ration + Veggie)</span>
             </p>
+          </div>
+        </div>
+
+        <!-- Settle Up via UPI -->
+        <div *ngIf="!isEditing() && groupSettlements().length > 0" class="mb-4">
+          <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">Settle Up</h2>
+          <div class="space-y-2">
+            <div *ngFor="let s of groupSettlements()"
+              class="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                  {{ s.fromName.slice(0,2).toUpperCase() }}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-gray-900">
+                    <span class="text-rose-500">{{ s.fromName }}</span>
+                    <span class="text-gray-400 font-normal mx-1">pays</span>
+                    <span class="text-brand-600">{{ s.toName }}</span>
+                  </p>
+                  <p class="text-base font-bold text-gray-900 mt-0.5">{{ fmt(s.amount) }}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 mt-2.5">
+                <a *ngIf="payeeUpi(s.toId)" [href]="upiLink(s)"
+                  class="flex-1 text-center text-xs font-bold px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white transition-colors">
+                  💸 Pay {{ s.toName }} via UPI
+                </a>
+                <a [href]="whatsappLink(s)" target="_blank" rel="noopener"
+                  class="text-xs font-semibold px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                  [ngClass]="payeeUpi(s.toId) ? 'flex-shrink-0' : 'flex-1 text-center'">
+                  💬 Remind on WhatsApp
+                </a>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -429,6 +476,21 @@ export class GroupDetailComponent implements OnInit {
     this.editExtraItems.update(items => items.filter(i => i.id !== id));
   }
 
+  addEditMember(): void {
+    this.editMembers.update(ms => [...ms, {
+      id: nanoid(),
+      name: '',
+      daysPresent: 15,
+      includeRationVeg: true,
+      personalExpensePaid: 0,
+      upiId: '',
+    }]);
+  }
+
+  removeEditMember(id: string): void {
+    this.editMembers.update(ms => ms.filter(m => m.id !== id));
+  }
+
   cancelEdit(): void {
     this.isEditing.set(false);
   }
@@ -446,11 +508,20 @@ export class GroupDetailComponent implements OnInit {
         .filter(i => i.label.trim() || (Number(i.amount) || 0) > 0)
         .map(i => ({ ...i, amount: Number(i.amount) || 0 })),
     };
-    const members = this.editMembers().map(m => ({
-      ...m,
-      daysPresent:         Number(m.daysPresent)         || 0,
-      personalExpensePaid: Number(m.personalExpensePaid) || 0,
-    }));
+    const members = this.editMembers()
+      .filter(m => m.name.trim())
+      .map(m => ({
+        ...m,
+        name:                m.name.trim(),
+        daysPresent:         Number(m.daysPresent)         || 0,
+        personalExpensePaid: Number(m.personalExpensePaid) || 0,
+        upiId:               (m.upiId ?? '').trim() || undefined,
+      }));
+    if (members.length === 0) {
+      this.isSaving.set(false);
+      this.ui.toast('Add at least one member', '⚠️');
+      return;
+    }
     const result = calculateShares(expenses, members);
     const updated: Group = { ...g, expenses, members, result };
     await this.groupService.updateGroup(updated);
@@ -458,6 +529,48 @@ export class GroupDetailComponent implements OnInit {
     this.isEditing.set(false);
     this.isSaving.set(false);
     this.ui.toast('Changes saved', '✅');
+  }
+
+  // Minimal "who pays whom" derived from member net balances, for UPI settling
+  readonly groupSettlements = computed(() => {
+    const g = this.group();
+    if (!g) return [];
+    const creditors = g.result.shares.filter(s => s.total < -0.01)
+      .map(s => ({ id: s.memberId, name: s.memberName, amt: -s.total }))
+      .sort((a, b) => b.amt - a.amt);
+    const debtors = g.result.shares.filter(s => s.total > 0.01)
+      .map(s => ({ id: s.memberId, name: s.memberName, amt: s.total }))
+      .sort((a, b) => b.amt - a.amt);
+    const out: { fromName: string; toId: string; toName: string; amount: number }[] = [];
+    let ci = 0, di = 0;
+    while (ci < creditors.length && di < debtors.length) {
+      const pay = Math.min(creditors[ci].amt, debtors[di].amt);
+      out.push({ fromName: debtors[di].name, toId: creditors[ci].id, toName: creditors[ci].name, amount: pay });
+      creditors[ci].amt -= pay; debtors[di].amt -= pay;
+      if (creditors[ci].amt < 0.01) ci++;
+      if (debtors[di].amt < 0.01) di++;
+    }
+    return out;
+  });
+
+  payeeUpi(memberId: string): string {
+    return this.group()?.members.find(m => m.id === memberId)?.upiId ?? '';
+  }
+
+  upiLink(s: { toId: string; toName: string; amount: number }): string {
+    const g = this.group();
+    return buildUpiUri(this.payeeUpi(s.toId), s.toName, s.amount, g ? `${g.name}` : 'Split Karo');
+  }
+
+  whatsappLink(s: { fromName: string; toId: string; toName: string; amount: number }): string {
+    const g = this.group();
+    const amt = this.fmt(s.amount);
+    const upi = this.payeeUpi(s.toId);
+    let text = `Hi ${s.fromName}, please pay ${amt} to ${s.toName}`;
+    if (g) text += ` for "${g.name}"`;
+    if (upi) text += `. UPI: ${upi}`;
+    text += ' — via Split Karo';
+    return `https://wa.me/?text=${encodeURIComponent(text)}`;
   }
 
   isDaywise(g: Group): boolean { return g.expenses.splitMode === 'daywise'; }
