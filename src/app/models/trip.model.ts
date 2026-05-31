@@ -9,8 +9,10 @@ export interface TripExpense {
   description: string;
   amount: number;
   paidBy: string;       // member id
-  splitAmong: string[]; // member ids — equal split only among these
+  splitAmong: string[]; // member ids that share this expense
   date?: string;        // ISO yyyy-mm-dd of actual spend (defaults to trip.createdAt)
+  splitType?: 'equal' | 'exact'; // default 'equal'
+  splits?: Record<string, number>; // member id → exact ₹ (only when splitType === 'exact')
 }
 
 export interface Settlement {
@@ -29,4 +31,5 @@ export interface Trip {
   members: TripMember[];
   expenses: TripExpense[];
   settlements: Settlement[];
+  simplifyDebts?: boolean; // default true — minimize number of transfers
 }

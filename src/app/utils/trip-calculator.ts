@@ -1,8 +1,31 @@
 import { TripMember, TripExpense, Settlement } from '../models/trip.model';
 
+/** What a single member owes for one expense, honouring its split type. */
+export function shareFor(exp: TripExpense, memberId: string): number {
+  if (!exp.splitAmong.includes(memberId)) return 0;
+  if (exp.splitType === 'exact') {
+    return Number(exp.splits?.[memberId]) || 0;
+  }
+  return exp.splitAmong.length > 0 ? exp.amount / exp.splitAmong.length : 0;
+}
+
 export function calculateSettlements(
   members: TripMember[],
   expenses: TripExpense[],
+  simplify = true,
+): Settlement[] {
+  const nameOf = (id: string) => members.find(m => m.id === id)?.name ?? id;
+
+  return simplify
+    ? minimalSettlements(members, expenses, nameOf)
+    : pairwiseSettlements(members, expenses, nameOf);
+}
+
+/** Greedy net-balance matching → fewest transfers. */
+function minimalSettlements(
+  members: TripMember[],
+  expenses: TripExpense[],
+  nameOf: (id: string) => string,
 ): Settlement[] {
   const balance: Record<string, number> = {};
   members.forEach(m => (balance[m.id] = 0));
@@ -10,13 +33,11 @@ export function calculateSettlements(
   for (const exp of expenses) {
     if (exp.splitAmong.length === 0) continue;
     balance[exp.paidBy] = (balance[exp.paidBy] ?? 0) + exp.amount;
-    const share = exp.amount / exp.splitAmong.length;
     for (const id of exp.splitAmong) {
-      balance[id] = (balance[id] ?? 0) - share;
+      balance[id] = (balance[id] ?? 0) - shareFor(exp, id);
     }
   }
 
-  // Separate into creditors (owed money) and debtors (owe money)
   const creditors = members
     .filter(m => balance[m.id] > 0.005)
     .map(m => ({ id: m.id, name: m.name, amount: balance[m.id] }))
@@ -47,4 +68,48 @@ export function calculateSettlements(
   }
 
   return settlements;
+}
+
+/** Direct debts: each person pays whoever actually fronted their share, netted per pair. */
+function pairwiseSettlements(
+  members: TripMember[],
+  expenses: TripExpense[],
+  nameOf: (id: string) => string,
+): Settlement[] {
+  // owes[debtor][creditor] = amount debtor owes creditor
+  const owes: Record<string, Record<string, number>> = {};
+  const add = (from: string, to: string, amt: number) => {
+    if (from === to || amt <= 0) return;
+    (owes[from] ??= {})[to] = (owes[from][to] ?? 0) + amt;
+  };
+
+  for (const exp of expenses) {
+    if (exp.splitAmong.length === 0) continue;
+    for (const id of exp.splitAmong) {
+      if (id === exp.paidBy) continue;
+      add(id, exp.paidBy, shareFor(exp, id));
+    }
+  }
+
+  const settlements: Settlement[] = [];
+  const seen = new Set<string>();
+
+  for (const a of members) {
+    for (const b of members) {
+      if (a.id >= b.id) continue;
+      const key = a.id + '|' + b.id;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const ab = owes[a.id]?.[b.id] ?? 0; // a owes b
+      const ba = owes[b.id]?.[a.id] ?? 0; // b owes a
+      const net = ab - ba;
+      if (net > 0.005) {
+        settlements.push({ from: a.id, fromName: nameOf(a.id), to: b.id, toName: nameOf(b.id), amount: net, paid: false });
+      } else if (net < -0.005) {
+        settlements.push({ from: b.id, fromName: nameOf(b.id), to: a.id, toName: nameOf(a.id), amount: -net, paid: false });
+      }
+    }
+  }
+
+  return settlements.sort((x, y) => y.amount - x.amount);
 }

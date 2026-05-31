@@ -6,6 +6,7 @@ import { TripService } from '../../services/trip.service';
 import { UiService } from '../../services/ui.service';
 import { Trip, TripExpense, TripMember } from '../../models/trip.model';
 import { buildUpiUri } from '../../utils/upi';
+import { shareFor } from '../../utils/trip-calculator';
 
 interface ExpenseEdit {
   id: string;
@@ -14,6 +15,8 @@ interface ExpenseEdit {
   paidBy: string;
   splitAmong: Record<string, boolean>;
   date: string;
+  splitType: 'equal' | 'exact';
+  splits: Record<string, number | null>;
 }
 
 @Component({
@@ -55,6 +58,22 @@ interface ExpenseEdit {
               [ngClass]="settledCount() === t.settlements.length && t.settlements.length > 0 ? 'text-emerald-600' : 'text-gray-400'">
               {{ settledCount() }}/{{ t.settlements.length }} done
             </span>
+          </div>
+
+          <!-- Simplify toggle -->
+          <div class="flex items-center gap-2 mb-3 bg-white border border-gray-100 rounded-xl px-3 py-2">
+            <button (click)="toggleSimplify()"
+              class="w-10 h-6 rounded-full flex-shrink-0 relative transition-colors"
+              [ngClass]="(t.simplifyDebts ?? true) ? 'bg-brand-500' : 'bg-gray-200'">
+              <span class="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all"
+                [ngClass]="(t.simplifyDebts ?? true) ? 'left-[1.125rem]' : 'left-0.5'"></span>
+            </button>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-semibold text-gray-700">Simplify debts</p>
+              <p class="text-[11px] text-gray-400 leading-tight">
+                {{ (t.simplifyDebts ?? true) ? 'Fewest transfers' : 'Pay exactly who you owe' }}
+              </p>
+            </div>
           </div>
 
           <!-- Progress bar -->
@@ -165,7 +184,11 @@ interface ExpenseEdit {
                   <span class="text-sm font-bold text-indigo-600">{{ expDate(e) | date:'d' }}</span>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-semibold text-gray-900">{{ e.description }}</p>
+                  <p class="text-sm font-semibold text-gray-900">
+                    {{ e.description }}
+                    <span *ngIf="e.splitType === 'exact'"
+                      class="ml-1 align-middle text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-full">unequal</span>
+                  </p>
                   <p class="text-xs text-gray-400 mt-0.5">
                     Paid by <span class="font-medium text-brand-600">{{ memberName(e.paidBy) }}</span>
                     · split among {{ splitNames(e) }}
@@ -223,7 +246,7 @@ interface ExpenseEdit {
             </div>
           </div>
 
-          <div class="mb-5">
+          <div class="mb-3">
             <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Split among</label>
             <div class="flex flex-wrap gap-1.5">
               <button *ngFor="let m of trip()?.members" (click)="ed.splitAmong[m.id] = !ed.splitAmong[m.id]"
@@ -234,7 +257,42 @@ interface ExpenseEdit {
             </div>
           </div>
 
-          <div class="flex gap-3">
+          <!-- Split type -->
+          <div class="mb-3">
+            <div class="flex gap-2">
+              <button (click)="ed.splitType = 'equal'"
+                class="flex-1 py-2 rounded-lg text-xs font-semibold border transition-colors"
+                [ngClass]="ed.splitType === 'equal' ? 'bg-brand-500 text-white border-brand-500' : 'bg-gray-50 text-gray-600 border-gray-200'">
+                ⚖️ Equally
+              </button>
+              <button (click)="ed.splitType = 'exact'"
+                class="flex-1 py-2 rounded-lg text-xs font-semibold border transition-colors"
+                [ngClass]="ed.splitType === 'exact' ? 'bg-brand-500 text-white border-brand-500' : 'bg-gray-50 text-gray-600 border-gray-200'">
+                ✏️ Exact amounts
+              </button>
+            </div>
+          </div>
+
+          <!-- Exact amount inputs -->
+          <div *ngIf="ed.splitType === 'exact'" class="mb-3 space-y-2">
+            <div *ngFor="let m of trip()?.members">
+              <div *ngIf="ed.splitAmong[m.id]" class="flex items-center gap-2">
+                <span class="text-sm text-gray-700 flex-1 min-w-0 truncate">{{ m.name }}</span>
+                <div class="relative w-28">
+                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
+                  <input [(ngModel)]="ed.splits[m.id]" type="number" min="0" placeholder="0"
+                    class="w-full border border-gray-200 rounded-lg pl-7 pr-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between text-xs font-semibold rounded-lg px-3 py-2"
+              [ngClass]="exactBalanced(ed) ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'">
+              <span>{{ exactBalanced(ed) ? '✓ Matches total' : 'Assigned' }}</span>
+              <span>₹{{ exactAssigned(ed) | number:'1.0-2' }} / ₹{{ +(ed.amount || 0) | number:'1.0-2' }}</span>
+            </div>
+          </div>
+
+          <div class="flex gap-3 mt-2">
             <button (click)="editExp.set(null)"
               class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors">Cancel</button>
             <button (click)="saveExpense()" [disabled]="!canSaveExpense()"
@@ -312,10 +370,7 @@ export class TripDetailComponent {
       const paid = t.expenses
         .filter(e => e.paidBy === m.id)
         .reduce((s, e) => s + e.amount, 0);
-      const owes = t.expenses.reduce((s, e) => {
-        if (!e.splitAmong.includes(m.id)) return s;
-        return s + e.amount / e.splitAmong.length;
-      }, 0);
+      const owes = t.expenses.reduce((s, e) => s + shareFor(e, m.id), 0);
       return { id: m.id, name: m.name, paid, owes, balance: paid - owes };
     });
   });
@@ -329,6 +384,22 @@ export class TripDetailComponent {
 
   expDate(e: TripExpense): string {
     return e.date || (this.trip()?.createdAt ?? '').slice(0, 10);
+  }
+
+  async toggleSimplify(): Promise<void> {
+    const t = this.trip();
+    if (!t) return;
+    await this.tripService.updateTrip({ ...t, simplifyDebts: !(t.simplifyDebts ?? true) });
+  }
+
+  exactAssigned(ed: ExpenseEdit): number {
+    return Object.keys(ed.splitAmong)
+      .filter(id => ed.splitAmong[id])
+      .reduce((s, id) => s + (Number(ed.splits[id]) || 0), 0);
+  }
+
+  exactBalanced(ed: ExpenseEdit): boolean {
+    return Math.abs(this.exactAssigned(ed) - (Number(ed.amount) || 0)) < 0.01 && (Number(ed.amount) || 0) > 0;
   }
 
   memberName(id: string): string {
@@ -367,7 +438,11 @@ export class TripDetailComponent {
 
   openEditExpense(e: TripExpense): void {
     const splitAmong: Record<string, boolean> = {};
-    (this.trip()?.members ?? []).forEach(m => (splitAmong[m.id] = e.splitAmong.includes(m.id)));
+    const splits: Record<string, number | null> = {};
+    (this.trip()?.members ?? []).forEach(m => {
+      splitAmong[m.id] = e.splitAmong.includes(m.id);
+      splits[m.id] = e.splits?.[m.id] ?? null;
+    });
     this.editExp.set({
       id: e.id,
       description: e.description,
@@ -375,29 +450,41 @@ export class TripDetailComponent {
       paidBy: e.paidBy,
       splitAmong,
       date: this.expDate(e),
+      splitType: e.splitType === 'exact' ? 'exact' : 'equal',
+      splits,
     });
   }
 
   canSaveExpense(): boolean {
     const ed = this.editExp();
     if (!ed) return false;
-    return !!ed.description.trim()
+    const base = !!ed.description.trim()
       && Number(ed.amount) > 0
       && !!ed.paidBy
       && Object.values(ed.splitAmong).some(v => v);
+    if (!base) return false;
+    if (ed.splitType === 'exact') return this.exactBalanced(ed);
+    return true;
   }
 
   async saveExpense(): Promise<void> {
     const t = this.trip();
     const ed = this.editExp();
     if (!t || !ed || !this.canSaveExpense()) return;
+    const splitAmong = Object.entries(ed.splitAmong).filter(([, v]) => v).map(([k]) => k);
+    const splits: Record<string, number> = {};
+    if (ed.splitType === 'exact') {
+      splitAmong.forEach(id => (splits[id] = Number(ed.splits[id]) || 0));
+    }
     const expenses: TripExpense[] = t.expenses.map(e => e.id === ed.id ? {
       id: ed.id,
       description: ed.description.trim(),
       amount: Number(ed.amount),
       paidBy: ed.paidBy,
-      splitAmong: Object.entries(ed.splitAmong).filter(([, v]) => v).map(([k]) => k),
+      splitAmong,
       date: ed.date,
+      splitType: ed.splitType,
+      ...(ed.splitType === 'exact' ? { splits } : {}),
     } : e);
     await this.tripService.updateTrip({ ...t, expenses });
     this.editExp.set(null);

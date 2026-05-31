@@ -38,7 +38,7 @@ export class TripService {
 
   /** Persist edits to a trip's expenses/members and re-derive its settlement plan. */
   async updateTrip(trip: Trip): Promise<void> {
-    const settlements = calculateSettlements(trip.members, trip.expenses);
+    const settlements = calculateSettlements(trip.members, trip.expenses, trip.simplifyDebts ?? true);
     const updated: Trip = { ...trip, settlements };
     await this.storage.saveTrip(updated);
     this._trips.update(ts => ts.map(t => t.id === updated.id ? updated : t));

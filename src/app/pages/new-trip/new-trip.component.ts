@@ -13,6 +13,8 @@ interface ExpenseRow {
   paidBy: string;
   splitAmong: Record<string, boolean>;
   date: string;
+  splitType: 'equal' | 'exact';
+  splits: Record<string, number | null>;
 }
 
 @Component({
@@ -158,6 +160,39 @@ interface ExpenseRow {
                 </div>
               </div>
 
+              <!-- Row 4: split type -->
+              <div class="mt-3 flex gap-2">
+                <button (click)="exp.splitType = 'equal'"
+                  class="flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-colors"
+                  [ngClass]="exp.splitType === 'equal' ? 'bg-brand-500 text-white border-brand-500' : 'bg-gray-50 text-gray-600 border-gray-200'">
+                  ⚖️ Equally
+                </button>
+                <button (click)="exp.splitType = 'exact'"
+                  class="flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-colors"
+                  [ngClass]="exp.splitType === 'exact' ? 'bg-brand-500 text-white border-brand-500' : 'bg-gray-50 text-gray-600 border-gray-200'">
+                  ✏️ Exact
+                </button>
+              </div>
+
+              <!-- Exact amount inputs -->
+              <div *ngIf="exp.splitType === 'exact'" class="mt-2 space-y-1.5">
+                <ng-container *ngFor="let m of validMembers()">
+                  <div *ngIf="exp.splitAmong[m.id]" class="flex items-center gap-2">
+                    <span class="text-sm text-gray-700 flex-1 min-w-0 truncate">{{ m.name }}</span>
+                    <div class="relative w-24">
+                      <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
+                      <input [(ngModel)]="exp.splits[m.id]" type="number" min="0" placeholder="0"
+                        class="w-full border border-gray-200 rounded-lg pl-7 pr-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+                    </div>
+                  </div>
+                </ng-container>
+                <div class="flex items-center justify-between text-xs font-semibold rounded-lg px-2.5 py-1.5"
+                  [ngClass]="exactBalanced(exp) ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'">
+                  <span>{{ exactBalanced(exp) ? '✓ Matches' : 'Assigned' }}</span>
+                  <span>₹{{ exactAssigned(exp) | number:'1.0-2' }} / ₹{{ +(exp.amount || 0) | number:'1.0-2' }}</span>
+                </div>
+              </div>
+
               <!-- Delete expense -->
               <div class="flex justify-end mt-3" *ngIf="expenseRows().length > 1">
                 <button (click)="removeExpense(i)"
@@ -234,7 +269,19 @@ export class NewTripComponent {
       paidBy: '',
       splitAmong: {},
       date: new Date().toISOString().slice(0, 10),
+      splitType: 'equal',
+      splits: {},
     };
+  }
+
+  exactAssigned(exp: ExpenseRow): number {
+    return Object.keys(exp.splitAmong)
+      .filter(id => exp.splitAmong[id])
+      .reduce((s, id) => s + (Number(exp.splits[id]) || 0), 0);
+  }
+
+  exactBalanced(exp: ExpenseRow): boolean {
+    return Math.abs(this.exactAssigned(exp) - (Number(exp.amount) || 0)) < 0.01 && (Number(exp.amount) || 0) > 0;
   }
 
   addExpense(): void {
@@ -259,7 +306,8 @@ export class NewTripComponent {
       e.description.trim() &&
       Number(e.amount) > 0 &&
       e.paidBy &&
-      Object.values(e.splitAmong).some(v => v),
+      Object.values(e.splitAmong).some(v => v) &&
+      (e.splitType !== 'exact' || this.exactBalanced(e)),
     );
   }
 
@@ -271,15 +319,22 @@ export class NewTripComponent {
       name: m.name.trim(),
       ...(m.upiId.trim() ? { upiId: m.upiId.trim() } : {}),
     }));
-    const expenses: TripExpense[] = this.expenseRows().map(e => ({
-      id: e.id,
-      description: e.description.trim(),
-      amount: Number(e.amount),
-      paidBy: e.paidBy,
-      splitAmong: Object.entries(e.splitAmong).filter(([, v]) => v).map(([k]) => k),
-      date: e.date || new Date().toISOString().slice(0, 10),
-    }));
-    const settlements = calculateSettlements(members, expenses);
+    const expenses: TripExpense[] = this.expenseRows().map(e => {
+      const splitAmong = Object.entries(e.splitAmong).filter(([, v]) => v).map(([k]) => k);
+      const splits: Record<string, number> = {};
+      if (e.splitType === 'exact') splitAmong.forEach(id => (splits[id] = Number(e.splits[id]) || 0));
+      return {
+        id: e.id,
+        description: e.description.trim(),
+        amount: Number(e.amount),
+        paidBy: e.paidBy,
+        splitAmong,
+        date: e.date || new Date().toISOString().slice(0, 10),
+        splitType: e.splitType,
+        ...(e.splitType === 'exact' ? { splits } : {}),
+      };
+    });
+    const settlements = calculateSettlements(members, expenses, true);
     const trip: Trip = {
       id: crypto.randomUUID(),
       name: this.tripName.trim(),
@@ -287,6 +342,7 @@ export class NewTripComponent {
       members,
       expenses,
       settlements,
+      simplifyDebts: true,
     };
     await this.tripService.addTrip(trip);
     this.router.navigate(['/trip', trip.id]);
