@@ -55,6 +55,7 @@ export interface Group {
   members: Member[];
   result: CalculationResult;
   paidMembers?: Record<string, boolean>;
+  archived?: boolean;
 }
 
 export interface FormState {

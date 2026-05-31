@@ -51,6 +51,14 @@ export class GroupService {
     this._groups.set(await this.storage.loadGroups());
   }
 
+  async setArchived(id: string, archived: boolean): Promise<void> {
+    const group = this._groups().find(g => g.id === id);
+    if (!group) return;
+    const updated: Group = { ...group, archived };
+    await this.storage.saveGroup(updated);
+    this._groups.update(gs => gs.map(g => g.id === id ? updated : g));
+  }
+
   async updateGroup(group: Group): Promise<void> {
     await this.storage.saveGroup(group);
     this._groups.update(gs => gs.map(g => g.id === group.id ? group : g));

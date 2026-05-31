@@ -1,4 +1,4 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { TripService } from '../../services/trip.service';
@@ -45,7 +45,7 @@ import { Trip } from '../../models/trip.model';
         <div class="grid grid-cols-3 gap-3 mb-6">
           <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
             <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Trips</p>
-            <p class="text-2xl font-bold text-gray-900">{{ trips().length }}</p>
+            <p class="text-2xl font-bold text-gray-900">{{ activeTrips().length }}</p>
           </div>
           <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
             <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Expenses</p>
@@ -70,7 +70,7 @@ import { Trip } from '../../models/trip.model';
         </div>
 
         <!-- Desktop Table -->
-        <div *ngIf="trips().length > 0" class="hidden md:block bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div *ngIf="activeTrips().length > 0" class="hidden md:block bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-gray-100 bg-gray-50">
@@ -83,7 +83,7 @@ import { Trip } from '../../models/trip.model';
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let trip of trips()"
+              <tr *ngFor="let trip of activeTrips()"
                 (click)="router.navigate(['/trip', trip.id])"
                 class="border-b border-gray-50 last:border-b-0 hover:bg-brand-50 cursor-pointer transition-colors group/row">
                 <td class="py-4 px-5">
@@ -106,7 +106,11 @@ import { Trip } from '../../models/trip.model';
                   </span>
                 </td>
                 <td class="py-4 px-4 text-right font-bold text-brand-600">₹{{ tripTotal(trip) | number:'1.0-0' }}</td>
-                <td class="py-4 px-5 text-right">
+                <td class="py-4 px-5 text-right whitespace-nowrap">
+                  <button (click)="archiveTrip($event, trip.id, true)"
+                    class="text-xs font-medium text-gray-300 hover:text-brand-600 transition-colors opacity-0 group-hover/row:opacity-100 px-2 py-1 rounded">
+                    Archive
+                  </button>
                   <button (click)="deleteTrip($event, trip.id)"
                     class="text-xs font-medium text-gray-300 hover:text-rose-500 transition-colors opacity-0 group-hover/row:opacity-100 px-2 py-1 rounded">
                     Delete
@@ -118,8 +122,8 @@ import { Trip } from '../../models/trip.model';
         </div>
 
         <!-- Mobile Cards -->
-        <div *ngIf="trips().length > 0" class="md:hidden space-y-3">
-          <div *ngFor="let trip of trips()"
+        <div *ngIf="activeTrips().length > 0" class="md:hidden space-y-3">
+          <div *ngFor="let trip of activeTrips()"
             (click)="router.navigate(['/trip', trip.id])"
             class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 cursor-pointer active:bg-gray-50 transition-colors">
             <div class="flex items-center gap-3 mb-3">
@@ -146,10 +150,38 @@ import { Trip } from '../../models/trip.model';
                 [ngClass]="settledCount(trip) === trip.settlements.length && trip.settlements.length > 0 ? 'text-emerald-600' : 'text-gray-500'">
                 {{ settledCount(trip) }}/{{ trip.settlements.length }} settled
               </span>
+              <button (click)="archiveTrip($event, trip.id, true)"
+                class="text-xs text-gray-300 hover:text-brand-600 transition-colors ml-1 flex-shrink-0">
+                Archive
+              </button>
               <button (click)="deleteTrip($event, trip.id)"
-                class="text-xs text-gray-300 hover:text-rose-500 transition-colors ml-1 flex-shrink-0">
+                class="text-xs text-gray-300 hover:text-rose-500 transition-colors flex-shrink-0">
                 Delete
               </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Archived section -->
+        <div *ngIf="archivedTrips().length > 0" class="mt-6">
+          <button (click)="showArchived.set(!showArchived())"
+            class="flex items-center gap-2 text-xs font-semibold text-gray-500 hover:text-gray-700 transition-colors">
+            <span>{{ showArchived() ? '▾' : '▸' }}</span>
+            Archived ({{ archivedTrips().length }})
+          </button>
+          <div *ngIf="showArchived()" class="mt-3 space-y-2">
+            <div *ngFor="let trip of archivedTrips()"
+              (click)="router.navigate(['/trip', trip.id])"
+              class="bg-white/70 rounded-xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3 cursor-pointer active:bg-gray-50 transition-colors">
+              <div class="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0">
+                {{ trip.name.slice(0,2).toUpperCase() }}
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-gray-700 truncate">{{ trip.name }}</p>
+                <p class="text-xs text-gray-400 mt-0.5">{{ trip.createdAt | date:'d MMM y' }} · ₹{{ tripTotal(trip) | number:'1.0-0' }}</p>
+              </div>
+              <button (click)="archiveTrip($event, trip.id, false)"
+                class="text-xs font-semibold text-brand-600 hover:underline flex-shrink-0">Unarchive</button>
             </div>
           </div>
         </div>
@@ -166,9 +198,18 @@ export class TripsComponent {
   readonly theme      = inject(ThemeService);
   readonly trips      = this.tripService.trips;
   readonly isLoading  = this.tripService.isLoading;
+  readonly activeTrips   = computed(() => this.trips().filter(t => !t.archived));
+  readonly archivedTrips = computed(() => this.trips().filter(t => t.archived));
+  readonly showArchived  = signal(false);
 
-  readonly totalExpenses = computed(() => this.trips().reduce((s, t) => s + t.expenses.length, 0));
-  readonly totalAmount   = computed(() => this.trips().reduce((s, t) => s + this.tripTotal(t), 0));
+  readonly totalExpenses = computed(() => this.activeTrips().reduce((s, t) => s + t.expenses.length, 0));
+  readonly totalAmount   = computed(() => this.activeTrips().reduce((s, t) => s + this.tripTotal(t), 0));
+
+  async archiveTrip(event: Event, id: string, archived: boolean): Promise<void> {
+    event.stopPropagation();
+    await this.tripService.setArchived(id, archived);
+    this.ui.toast(archived ? 'Trip archived' : 'Trip unarchived', archived ? '📦' : '↩️');
+  }
 
   tripTotal(trip: Trip): number {
     return trip.expenses.reduce((s, e) => s + e.amount, 0);

@@ -37,9 +37,27 @@ interface ExpenseEdit {
             <p class="font-bold text-gray-900 truncate">{{ trip()?.name }}</p>
             <p class="text-xs text-gray-400">{{ trip()?.members?.length }} members · {{ trip()?.expenses?.length }} expenses</p>
           </div>
-          <button (click)="deleteTrip()"
-            class="text-xs font-medium text-gray-300 hover:text-rose-500 transition-colors px-2 py-1 rounded">
-            Delete
+          <button (click)="shareSummary()"
+            class="flex items-center gap-1 text-xs font-semibold text-brand-600 border border-brand-200 hover:bg-brand-50 transition-colors px-2.5 py-1.5 rounded-lg">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+            </svg>
+            Share
+          </button>
+          <button (click)="toggleArchive()" [title]="trip()?.archived ? 'Unarchive' : 'Archive'"
+            class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-brand-600 hover:bg-gray-100 transition-colors flex-shrink-0">
+            <svg *ngIf="!trip()?.archived" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z"/>
+            </svg>
+            <svg *ngIf="trip()?.archived" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.55 5.22l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.15.55L3.46 5.22C3.17 5.57 3 6.01 3 6.5V19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.49-.17-.93-.45-1.28zM12 9.5l5.5 5.5H14v2h-4v-2H6.5L12 9.5zM5.12 5l.82-1h12l.93 1H5.12z"/>
+            </svg>
+          </button>
+          <button (click)="deleteTrip()" title="Delete"
+            class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors flex-shrink-0">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
           </button>
         </div>
       </header>
@@ -173,7 +191,13 @@ interface ExpenseEdit {
 
         <!-- ══ EXPENSE LOG ══ -->
         <section>
-          <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Expense Log</h2>
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Expense Log</h2>
+            <button (click)="openNewExpense()"
+              class="flex items-center gap-1 text-xs font-bold text-brand-600 border border-brand-200 hover:bg-brand-50 px-2.5 py-1.5 rounded-lg transition-colors">
+              + Add expense
+            </button>
+          </div>
           <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div *ngFor="let e of sortedExpenses(); let last = last"
               class="px-4 py-3"
@@ -217,7 +241,7 @@ interface ExpenseEdit {
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" (click)="editExp.set(null)"></div>
         <div class="relative bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto p-5"
           style="animation: sheetUp 0.25s cubic-bezier(.32,.72,0,1)">
-          <h3 class="text-lg font-bold text-gray-900 mb-4">Edit expense</h3>
+          <h3 class="text-lg font-bold text-gray-900 mb-4">{{ editIsNew() ? 'Add expense' : 'Edit expense' }}</h3>
 
           <div class="flex gap-2 mb-3">
             <input [(ngModel)]="ed.description" type="text" placeholder="Description"
@@ -433,8 +457,28 @@ export class TripDetailComponent {
     return `https://wa.me/?text=${encodeURIComponent(text)}`;
   }
 
-  // ─── Edit / delete a single expense ───────────────────────────────
+  // ─── Add / edit / delete a single expense ─────────────────────────
   readonly editExp = signal<ExpenseEdit | null>(null);
+  readonly editIsNew = signal(false);
+
+  openNewExpense(): void {
+    const t = this.trip();
+    if (!t) return;
+    const splitAmong: Record<string, boolean> = {};
+    const splits: Record<string, number | null> = {};
+    t.members.forEach(m => { splitAmong[m.id] = true; splits[m.id] = null; });
+    this.editIsNew.set(true);
+    this.editExp.set({
+      id: crypto.randomUUID(),
+      description: '',
+      amount: null,
+      paidBy: t.members[0]?.id ?? '',
+      splitAmong,
+      date: new Date().toISOString().slice(0, 10),
+      splitType: 'equal',
+      splits,
+    });
+  }
 
   openEditExpense(e: TripExpense): void {
     const splitAmong: Record<string, boolean> = {};
@@ -443,6 +487,7 @@ export class TripDetailComponent {
       splitAmong[m.id] = e.splitAmong.includes(m.id);
       splits[m.id] = e.splits?.[m.id] ?? null;
     });
+    this.editIsNew.set(false);
     this.editExp.set({
       id: e.id,
       description: e.description,
@@ -476,7 +521,7 @@ export class TripDetailComponent {
     if (ed.splitType === 'exact') {
       splitAmong.forEach(id => (splits[id] = Number(ed.splits[id]) || 0));
     }
-    const expenses: TripExpense[] = t.expenses.map(e => e.id === ed.id ? {
+    const built: TripExpense = {
       id: ed.id,
       description: ed.description.trim(),
       amount: Number(ed.amount),
@@ -485,10 +530,14 @@ export class TripDetailComponent {
       date: ed.date,
       splitType: ed.splitType,
       ...(ed.splitType === 'exact' ? { splits } : {}),
-    } : e);
+    };
+    const isNew = !t.expenses.some(e => e.id === ed.id);
+    const expenses: TripExpense[] = isNew
+      ? [...t.expenses, built]
+      : t.expenses.map(e => e.id === ed.id ? built : e);
     await this.tripService.updateTrip({ ...t, expenses });
     this.editExp.set(null);
-    this.ui.toast('Expense updated', '✅');
+    this.ui.toast(isNew ? 'Expense added' : 'Expense updated', '✅');
   }
 
   // ─── Edit / add members ──────────────────────────────────────────
@@ -551,6 +600,55 @@ export class TripDetailComponent {
     const t = this.trip();
     if (!t) return;
     await this.tripService.toggleSettlementPaid(t.id, index);
+  }
+
+  async toggleArchive(): Promise<void> {
+    const t = this.trip();
+    if (!t) return;
+    const next = !t.archived;
+    await this.tripService.setArchived(t.id, next);
+    this.ui.toast(next ? 'Trip archived' : 'Trip unarchived', next ? '📦' : '↩️');
+    if (next) this.router.navigate(['/trips']);
+  }
+
+  // ─── Share trip summary ───────────────────────────────────────────
+  private buildSummary(): string {
+    const t = this.trip();
+    if (!t) return '';
+    const rupee = (n: number) => '₹' + (Math.round(n * 100) / 100).toLocaleString('en-IN');
+    const lines: string[] = [`✈️ *${t.name}* — Split Karo`, ''];
+    lines.push(`💰 Total: ${rupee(this.grandTotal())}`);
+    lines.push(`👥 ${t.members.length} members`);
+    lines.push('');
+    if (t.settlements.length === 0) {
+      lines.push('✓ Everyone is settled up — no payments needed!');
+    } else {
+      lines.push('*Settle up:*');
+      for (const s of t.settlements) {
+        const upi = this.payeeUpi(s.to);
+        lines.push(`• ${s.fromName} → ${s.toName}: ${rupee(s.amount)}${s.paid ? ' ✅' : ''}${upi ? `  (UPI: ${upi})` : ''}`);
+      }
+    }
+    lines.push('', '_via Split Karo_');
+    return lines.join('\n');
+  }
+
+  shareSummary(): void {
+    const text = this.buildSummary();
+    if (!text) return;
+    if (navigator.share) {
+      navigator.share({ text }).catch(() => {});
+    } else if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => this.ui.toast('Summary copied'));
+    } else {
+      const ta = Object.assign(document.createElement('textarea'), { value: text });
+      Object.assign(ta.style, { position: 'fixed', opacity: '0' });
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      this.ui.toast('Summary copied');
+    }
   }
 
   async deleteTrip(): Promise<void> {

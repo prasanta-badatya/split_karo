@@ -67,7 +67,7 @@ const TAB_ROOTS = ['/', '', '/groups', '/trips', '/settings'];
             [ngClass]="activeTab === 'home' ? 'bg-brand-50 opacity-100' : 'opacity-0'"></div>
           <span class="relative text-[22px] leading-none transition-transform duration-200"
             [ngClass]="activeTab === 'home' ? 'scale-110' : 'scale-100'">🏠</span>
-          <span class="relative text-[10px] font-bold tracking-wide">Home</span>
+          <span class="relative text-[11px] font-bold tracking-wide">Home</span>
         </button>
 
         <!-- Groups -->
@@ -78,7 +78,7 @@ const TAB_ROOTS = ['/', '', '/groups', '/trips', '/settings'];
             [ngClass]="activeTab === 'groups' ? 'bg-brand-50 opacity-100' : 'opacity-0'"></div>
           <span class="relative text-[22px] leading-none transition-transform duration-200"
             [ngClass]="activeTab === 'groups' ? 'scale-110' : 'scale-100'">📋</span>
-          <span class="relative text-[10px] font-bold tracking-wide">Groups</span>
+          <span class="relative text-[11px] font-bold tracking-wide">Groups</span>
         </button>
 
         <!-- Quick Split — raised FAB (always highlighted) -->
@@ -88,7 +88,7 @@ const TAB_ROOTS = ['/', '', '/groups', '/trips', '/settings'];
                       flex items-center justify-center ring-4 ring-white transition-all duration-150">
             <span class="text-2xl leading-none">⚡</span>
           </div>
-          <span class="text-[10px] font-bold tracking-wide text-amber-700">Quick</span>
+          <span class="text-[11px] font-bold tracking-wide text-amber-700">Quick</span>
         </button>
 
         <!-- Trips -->
@@ -99,7 +99,7 @@ const TAB_ROOTS = ['/', '', '/groups', '/trips', '/settings'];
             [ngClass]="activeTab === 'trips' ? 'bg-indigo-50 opacity-100' : 'opacity-0'"></div>
           <span class="relative text-[22px] leading-none transition-transform duration-200"
             [ngClass]="activeTab === 'trips' ? 'scale-110' : 'scale-100'">✈️</span>
-          <span class="relative text-[10px] font-bold tracking-wide">Trips</span>
+          <span class="relative text-[11px] font-bold tracking-wide">Trips</span>
         </button>
 
         <!-- Settings -->
@@ -110,7 +110,7 @@ const TAB_ROOTS = ['/', '', '/groups', '/trips', '/settings'];
             [ngClass]="activeTab === 'settings' ? 'bg-brand-50 opacity-100' : 'opacity-0'"></div>
           <span class="relative text-[22px] leading-none transition-transform duration-200"
             [ngClass]="activeTab === 'settings' ? 'scale-110' : 'scale-100'">⚙️</span>
-          <span class="relative text-[10px] font-bold tracking-wide">Settings</span>
+          <span class="relative text-[11px] font-bold tracking-wide">Settings</span>
         </button>
 
       </div>

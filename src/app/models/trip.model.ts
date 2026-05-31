@@ -32,4 +32,5 @@ export interface Trip {
   expenses: TripExpense[];
   settlements: Settlement[];
   simplifyDebts?: boolean; // default true — minimize number of transfers
+  archived?: boolean;
 }

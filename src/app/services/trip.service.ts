@@ -36,6 +36,14 @@ export class TripService {
     this._trips.set(await this.storage.loadTrips());
   }
 
+  async setArchived(id: string, archived: boolean): Promise<void> {
+    const trip = this._trips().find(t => t.id === id);
+    if (!trip) return;
+    const updated: Trip = { ...trip, archived };
+    await this.storage.saveTrip(updated);
+    this._trips.update(ts => ts.map(t => t.id === id ? updated : t));
+  }
+
   /** Persist edits to a trip's expenses/members and re-derive its settlement plan. */
   async updateTrip(trip: Trip): Promise<void> {
     const settlements = calculateSettlements(trip.members, trip.expenses, trip.simplifyDebts ?? true);
