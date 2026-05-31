@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { TripService } from '../../services/trip.service';
 import { TripMember, TripExpense, Trip } from '../../models/trip.model';
 import { calculateSettlements } from '../../utils/trip-calculator';
+import { IconComponent } from '../../components/icon/icon.component';
 
 interface ExpenseRow {
   id: string;
@@ -20,7 +21,7 @@ interface ExpenseRow {
 @Component({
   selector: 'app-new-trip',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, IconComponent],
   template: `
     <div class="min-h-screen bg-slate-50 flex flex-col">
 
@@ -29,7 +30,7 @@ interface ExpenseRow {
         <div class="max-w-2xl mx-auto px-4 h-14 flex items-center gap-3">
           <button (click)="goBack()"
             class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
-            ←
+            <app-icon name="arrow-left" class="w-5 h-5"></app-icon>
           </button>
           <span class="font-bold text-gray-900">New Trip</span>
           <!-- Step indicator -->

@@ -9,11 +9,12 @@ import { Group, Member, ExpenseConfig, ExtraItem } from '../../models/group.mode
 import { calculateShares } from '../../utils/calculator';
 import { formatCurrency, nanoid } from '../../utils/formatters';
 import { buildUpiUri } from '../../utils/upi';
+import { IconComponent } from '../../components/icon/icon.component';
 
 @Component({
   selector: 'app-group-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, IconComponent],
   template: `
     <div class="min-h-screen bg-slate-50">
 
@@ -21,8 +22,8 @@ import { buildUpiUri } from '../../utils/upi';
       <header class="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
         <div class="max-w-6xl mx-auto px-4 h-14 flex items-center gap-3">
           <button (click)="goBack()"
-            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-500 text-lg flex-shrink-0">
-            ←
+            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-500 flex-shrink-0">
+            <app-icon name="arrow-left" class="w-5 h-5"></app-icon>
           </button>
           <div class="flex-1 min-w-0">
             <h1 class="font-bold text-gray-900 text-sm truncate">{{ group()?.name }}</h1>
@@ -32,10 +33,7 @@ import { buildUpiUri } from '../../utils/upi';
           <ng-container *ngIf="!isEditing()">
             <button (click)="shareImage()" [disabled]="isSharing()"
               class="flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold text-brand-600 border border-brand-200 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-              <svg *ngIf="!isSharing()" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-              </svg>
+              <app-icon *ngIf="!isSharing()" name="share" class="w-4 h-4"></app-icon>
               <svg *ngIf="isSharing()" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
@@ -44,12 +42,7 @@ import { buildUpiUri } from '../../utils/upi';
             </button>
             <button (click)="toggleArchive()" [title]="group()?.archived ? 'Unarchive' : 'Archive'"
               class="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-brand-600 hover:bg-gray-100 transition-colors">
-              <svg *ngIf="!group()?.archived" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z"/>
-              </svg>
-              <svg *ngIf="group()?.archived" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M20.55 5.22l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.15.55L3.46 5.22C3.17 5.57 3 6.01 3 6.5V19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.49-.17-.93-.45-1.28zM12 9.5l5.5 5.5H14v2h-4v-2H6.5L12 9.5zM5.12 5l.82-1h12l.93 1H5.12z"/>
-              </svg>
+              <app-icon [name]="group()?.archived ? 'unarchive' : 'archive'" class="w-5 h-5"></app-icon>
             </button>
           </ng-container>
 

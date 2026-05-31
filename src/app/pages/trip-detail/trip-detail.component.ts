@@ -7,6 +7,7 @@ import { UiService } from '../../services/ui.service';
 import { Trip, TripExpense, TripMember } from '../../models/trip.model';
 import { buildUpiUri } from '../../utils/upi';
 import { shareFor } from '../../utils/trip-calculator';
+import { IconComponent } from '../../components/icon/icon.component';
 
 interface ExpenseEdit {
   id: string;
@@ -22,7 +23,7 @@ interface ExpenseEdit {
 @Component({
   selector: 'app-trip-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, IconComponent],
   template: `
     <div class="min-h-screen bg-slate-50 flex flex-col">
 
@@ -31,7 +32,7 @@ interface ExpenseEdit {
         <div class="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
           <button (click)="router.navigate(['/trips'])"
             class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
-            ←
+            <app-icon name="arrow-left" class="w-5 h-5"></app-icon>
           </button>
           <div class="flex-1 min-w-0">
             <p class="font-bold text-gray-900 truncate">{{ trip()?.name }}</p>
@@ -39,25 +40,16 @@ interface ExpenseEdit {
           </div>
           <button (click)="shareSummary()"
             class="flex items-center gap-1 text-xs font-semibold text-brand-600 border border-brand-200 hover:bg-brand-50 transition-colors px-2.5 py-1.5 rounded-lg">
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
-            </svg>
+            <app-icon name="share" class="w-3.5 h-3.5"></app-icon>
             Share
           </button>
           <button (click)="toggleArchive()" [title]="trip()?.archived ? 'Unarchive' : 'Archive'"
             class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-brand-600 hover:bg-gray-100 transition-colors flex-shrink-0">
-            <svg *ngIf="!trip()?.archived" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z"/>
-            </svg>
-            <svg *ngIf="trip()?.archived" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M20.55 5.22l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.15.55L3.46 5.22C3.17 5.57 3 6.01 3 6.5V19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.49-.17-.93-.45-1.28zM12 9.5l5.5 5.5H14v2h-4v-2H6.5L12 9.5zM5.12 5l.82-1h12l.93 1H5.12z"/>
-            </svg>
+            <app-icon [name]="trip()?.archived ? 'unarchive' : 'archive'" class="w-5 h-5"></app-icon>
           </button>
           <button (click)="deleteTrip()" title="Delete"
             class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors flex-shrink-0">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-            </svg>
+            <app-icon name="trash" class="w-5 h-5"></app-icon>
           </button>
         </div>
       </header>

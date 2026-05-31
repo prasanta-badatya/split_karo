@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 630px; }
+  body {
+    font-family: 'Segoe UI', Inter, system-ui, -apple-system, Roboto, sans-serif;
+    background: linear-gradient(135deg, #6366f1 0%, #4338ca 55%, #3730a3 100%);
+    color: #fff; position: relative; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 0 90px;
+  }
+  /* soft decorative blobs */
+  .blob { position: absolute; border-radius: 50%; filter: blur(2px); opacity: .18; background:#fff; }
+  .b1 { width: 360px; height: 360px; top: -120px; right: -80px; }
+  .b2 { width: 240px; height: 240px; bottom: -110px; left: 320px; opacity:.12; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 14px; margin-bottom: 30px;
+  }
+  .logo {
+    width: 92px; height: 92px; border-radius: 24px; background: #fff; color: #4338ca;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 56px; font-weight: 800; box-shadow: 0 12px 40px rgba(0,0,0,.25);
+  }
+  .brand { font-size: 52px; font-weight: 800; letter-spacing: -1px; }
+  h1 { font-size: 64px; line-height: 1.08; font-weight: 800; letter-spacing: -1.5px; max-width: 1000px; }
+  h1 .hl { color: #fde68a; }
+  p { font-size: 30px; margin-top: 26px; color: #e0e7ff; max-width: 920px; line-height: 1.4; }
+  .pills { display: flex; gap: 16px; margin-top: 40px; }
+  .pill {
+    font-size: 24px; font-weight: 600; padding: 12px 24px; border-radius: 999px;
+    background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25);
+  }
+  .url { position: absolute; bottom: 44px; right: 90px; font-size: 22px; color: #c7d2fe; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+
+  <div class="badge">
+    <div class="logo">₹</div>
+    <div class="brand">Split Karo</div>
+  </div>
+
+  <h1>Split bills fairly with your <span class="hl">roommates</span></h1>
+  <p>Rent, ration &amp; veggies — equal or day-wise. Free, no sign-up, settles over UPI.</p>
+
+  <div class="pills">
+    <div class="pill">✓ 100% Free</div>
+    <div class="pill">✓ Works Offline</div>
+    <div class="pill">✓ UPI Settle</div>
+  </div>
+
+  <div class="url">prasanta-badatya.github.io/split_karo</div>
+</body>
+</html>

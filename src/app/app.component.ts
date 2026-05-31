@@ -4,6 +4,7 @@ import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs/operators';
 import { QuickSplitComponent } from './components/quick-split/quick-split.component';
+import { IconComponent } from './components/icon/icon.component';
 import { UiService } from './services/ui.service';
 import { GroupService } from './services/group.service';
 import { TripService } from './services/trip.service';
@@ -18,7 +19,7 @@ const TAB_ROOTS = ['/', '', '/groups', '/trips', '/settings'];
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, QuickSplitComponent],
+  imports: [CommonModule, RouterOutlet, QuickSplitComponent, IconComponent],
   template: `
     <!-- ═══ LOCK SCREEN ═══ -->
     <div *ngIf="lock.isLocked()"
@@ -65,8 +66,8 @@ const TAB_ROOTS = ['/', '', '/groups', '/trips', '/settings'];
           [ngClass]="activeTab === 'home' ? 'text-brand-600' : 'text-gray-400'">
           <div class="absolute inset-x-1.5 inset-y-1 rounded-xl transition-all duration-200"
             [ngClass]="activeTab === 'home' ? 'bg-brand-50 opacity-100' : 'opacity-0'"></div>
-          <span class="relative text-[22px] leading-none transition-transform duration-200"
-            [ngClass]="activeTab === 'home' ? 'scale-110' : 'scale-100'">🏠</span>
+          <app-icon name="home" class="relative w-[22px] h-[22px] transition-transform duration-200"
+            [ngClass]="activeTab === 'home' ? 'scale-110' : 'scale-100'"></app-icon>
           <span class="relative text-[11px] font-bold tracking-wide">Home</span>
         </button>
 
@@ -76,8 +77,8 @@ const TAB_ROOTS = ['/', '', '/groups', '/trips', '/settings'];
           [ngClass]="activeTab === 'groups' ? 'text-brand-600' : 'text-gray-400'">
           <div class="absolute inset-x-1.5 inset-y-1 rounded-xl transition-all duration-200"
             [ngClass]="activeTab === 'groups' ? 'bg-brand-50 opacity-100' : 'opacity-0'"></div>
-          <span class="relative text-[22px] leading-none transition-transform duration-200"
-            [ngClass]="activeTab === 'groups' ? 'scale-110' : 'scale-100'">📋</span>
+          <app-icon name="users" class="relative w-[22px] h-[22px] transition-transform duration-200"
+            [ngClass]="activeTab === 'groups' ? 'scale-110' : 'scale-100'"></app-icon>
           <span class="relative text-[11px] font-bold tracking-wide">Groups</span>
         </button>
 
@@ -86,7 +87,7 @@ const TAB_ROOTS = ['/', '', '/groups', '/trips', '/settings'];
           class="flex-1 flex flex-col items-center justify-end pb-1 gap-0.5 -mt-5">
           <div class="w-14 h-14 bg-amber-400 hover:bg-amber-500 active:scale-95 rounded-full shadow-xl
                       flex items-center justify-center ring-4 ring-white transition-all duration-150">
-            <span class="text-2xl leading-none">⚡</span>
+            <app-icon name="zap" [filled]="true" class="w-7 h-7 text-amber-900"></app-icon>
           </div>
           <span class="text-[11px] font-bold tracking-wide text-amber-700">Quick</span>
         </button>
@@ -97,8 +98,8 @@ const TAB_ROOTS = ['/', '', '/groups', '/trips', '/settings'];
           [ngClass]="activeTab === 'trips' ? 'text-indigo-600' : 'text-gray-400'">
           <div class="absolute inset-x-1.5 inset-y-1 rounded-xl transition-all duration-200"
             [ngClass]="activeTab === 'trips' ? 'bg-indigo-50 opacity-100' : 'opacity-0'"></div>
-          <span class="relative text-[22px] leading-none transition-transform duration-200"
-            [ngClass]="activeTab === 'trips' ? 'scale-110' : 'scale-100'">✈️</span>
+          <app-icon name="plane" class="relative w-[22px] h-[22px] transition-transform duration-200"
+            [ngClass]="activeTab === 'trips' ? 'scale-110' : 'scale-100'"></app-icon>
           <span class="relative text-[11px] font-bold tracking-wide">Trips</span>
         </button>
 
@@ -108,8 +109,8 @@ const TAB_ROOTS = ['/', '', '/groups', '/trips', '/settings'];
           [ngClass]="activeTab === 'settings' ? 'text-brand-600' : 'text-gray-400'">
           <div class="absolute inset-x-1.5 inset-y-1 rounded-xl transition-all duration-200"
             [ngClass]="activeTab === 'settings' ? 'bg-brand-50 opacity-100' : 'opacity-0'"></div>
-          <span class="relative text-[22px] leading-none transition-transform duration-200"
-            [ngClass]="activeTab === 'settings' ? 'scale-110' : 'scale-100'">⚙️</span>
+          <app-icon name="settings" class="relative w-[22px] h-[22px] transition-transform duration-200"
+            [ngClass]="activeTab === 'settings' ? 'scale-110' : 'scale-100'"></app-icon>
           <span class="relative text-[11px] font-bold tracking-wide">Settings</span>
         </button>
 

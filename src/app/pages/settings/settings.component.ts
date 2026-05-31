@@ -9,6 +9,7 @@ import { UiService } from '../../services/ui.service';
 import { ThemeService } from '../../services/theme.service';
 import { LockService } from '../../services/lock.service';
 import { ThemeToggleComponent } from '../../components/theme-toggle/theme-toggle.component';
+import { IconComponent } from '../../components/icon/icon.component';
 import { Group } from '../../models/group.model';
 import { Trip } from '../../models/trip.model';
 
@@ -23,7 +24,7 @@ interface BackupFile {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, ThemeToggleComponent],
+  imports: [CommonModule, FormsModule, ThemeToggleComponent, IconComponent],
   template: `
     <div class="min-h-screen bg-slate-50 flex flex-col pb-24">
 
@@ -32,7 +33,7 @@ interface BackupFile {
         <div class="max-w-2xl mx-auto px-4 h-14 flex items-center gap-3">
           <button (click)="router.navigate(['/'])"
             class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
-            ←
+            <app-icon name="arrow-left" class="w-5 h-5"></app-icon>
           </button>
           <span class="font-bold text-gray-900">Settings</span>
         </div>

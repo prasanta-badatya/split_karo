@@ -8,11 +8,12 @@ import { UiService } from '../../services/ui.service';
 import { calculateShares } from '../../utils/calculator';
 import { nanoid, formatCurrency } from '../../utils/formatters';
 import { Member, ExpenseConfig, SplitMode, ExtraItem } from '../../models/group.model';
+import { IconComponent } from '../../components/icon/icon.component';
 
 @Component({
   selector: 'app-new-group',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, IconComponent],
   template: `
     <div class="min-h-screen bg-slate-50 flex flex-col">
 
@@ -20,8 +21,8 @@ import { Member, ExpenseConfig, SplitMode, ExtraItem } from '../../models/group.
       <header class="bg-white border-b border-gray-200 sticky top-0 z-20">
         <div class="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
           <button (click)="back()"
-            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-500 text-lg flex-shrink-0">
-            ←
+            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-500 flex-shrink-0">
+            <app-icon name="arrow-left" class="w-5 h-5"></app-icon>
           </button>
           <div class="flex-1 min-w-0">
             <h1 class="text-sm font-bold text-gray-900">New Group</h1>
