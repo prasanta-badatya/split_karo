@@ -138,22 +138,6 @@ const TAB_ROOTS = ['/', '', '/groups', '/trips', '/settings'];
         class="flex-shrink-0 text-amber-400 hover:text-amber-700 text-lg leading-none">×</button>
     </div>
 
-    <!-- PWA update banner -->
-    <div *ngIf="updateReady()"
-      class="fixed bottom-20 left-4 right-4 z-50 max-w-sm mx-auto
-             bg-gray-900 text-white rounded-2xl shadow-2xl px-4 py-3
-             flex items-center gap-3" style="animation: slideUp 0.3s ease-out">
-      <span class="text-xl flex-shrink-0">🆕</span>
-      <div class="flex-1 min-w-0">
-        <p class="text-sm font-semibold">New version available</p>
-        <p class="text-xs text-gray-400 mt-0.5">Tap Update to get the latest features</p>
-      </div>
-      <button (click)="applyUpdate()"
-        class="flex-shrink-0 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
-        Update
-      </button>
-    </div>
-
     <!-- ═══ GLOBAL TOAST ═══ -->
     <div *ngIf="ui.toastState() as t"
       class="fixed left-4 right-4 z-[60] max-w-sm mx-auto bg-gray-900 text-white rounded-xl shadow-2xl px-4 py-3 flex items-center gap-2.5"
@@ -213,7 +197,6 @@ export class AppComponent implements OnInit {
   private tripSvc      = inject(TripService);
   readonly lock        = inject(LockService);
   private theme        = inject(ThemeService);
-  readonly updateReady  = signal(false);
   readonly showQuickSplit = signal(false);
   readonly backupNudge = signal(false);
   readonly pinEntry = signal('');
@@ -222,6 +205,7 @@ export class AppComponent implements OnInit {
   showNav = true;
 
   private nudgeChecked = false;
+  private reloading = false;
 
   constructor() {
     // Decide ONCE per app open (after data loads) whether to show the backup nudge.
@@ -270,19 +254,25 @@ export class AppComponent implements OnInit {
 
     sw.versionUpdates
       .pipe(filter((e): e is VersionReadyEvent => e.type === 'VERSION_READY'))
-      .subscribe(() => {
-        this.updateReady.set(true);
-        sw.activateUpdate().catch(() => {});
+      .subscribe(async () => {
+        // Guard against reload loops (one reload per page session).
+        if (this.reloading) return;
+        this.reloading = true;
+        try {
+          await sw.activateUpdate();
+        } catch { /* activate best-effort */ }
+        // New version is now the active SW — reload once so the user
+        // immediately gets fresh code instead of the stale cached shell.
+        document.location.reload();
       });
 
     const check = () => sw.checkForUpdate().catch(() => {});
     check();
     setInterval(check, 60_000);
 
+    // Re-check whenever the app returns to the foreground (reopen / tab switch).
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState !== 'visible') return;
-      if (this.updateReady()) document.location.reload();
-      else check();
+      if (document.visibilityState === 'visible') check();
     });
   }
 
@@ -298,8 +288,6 @@ export class AppComponent implements OnInit {
   }
 
   navigate(path: string): void { this.router.navigate([path]); }
-
-  applyUpdate(): void { document.location.reload(); }
 
   @HostListener('document:keydown', ['$event'])
   onKeydown(e: KeyboardEvent): void {
