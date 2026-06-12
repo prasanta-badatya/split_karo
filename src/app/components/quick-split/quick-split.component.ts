@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter, signal, inject } from '@angular/core';
+import { Component, Output, EventEmitter, signal, inject, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -18,28 +18,44 @@ type Mode = 'equal' | 'one-paid' | 'custom';
     <div class="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm" (click)="close.emit()"></div>
 
     <!-- Bottom Sheet -->
-    <div class="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl flex flex-col"
-      style="max-height:92vh; animation: sheetUp 0.28s cubic-bezier(.32,.72,0,1)">
+    <div #sheet class="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl flex flex-col"
+      style="max-height:92vh"
+      [style.transform]="'translateY(' + dragY() + 'px)'"
+      [style.transition]="dragging() ? 'none' : 'transform 0.3s cubic-bezier(.32,.72,0,1)'"
+      [style.animation]="entered() ? 'none' : 'sheetUp 0.28s cubic-bezier(.32,.72,0,1)'">
 
-      <!-- Handle -->
-      <div class="flex justify-center pt-3 pb-1 flex-shrink-0">
-        <div class="w-10 h-1 bg-gray-200 rounded-full"></div>
-      </div>
+      <!-- Drag zone: handle + header (swipe down to close) -->
+      <div class="flex-shrink-0 cursor-grab active:cursor-grabbing" style="touch-action:none"
+        (pointerdown)="onDragStart($event)"
+        (pointermove)="onDragMove($event)"
+        (pointerup)="onDragEnd($event)"
+        (pointercancel)="onDragEnd($event)">
 
-      <!-- Header -->
-      <div class="px-5 py-3 flex items-center justify-between flex-shrink-0 border-b border-gray-100">
-        <div>
-          <h2 class="font-bold text-gray-900 text-lg">⚡ Quick Split</h2>
-          <p class="text-xs text-gray-400 mt-0.5">No saving · instant result</p>
+        <!-- Handle -->
+        <div class="flex justify-center pt-3 pb-1">
+          <div class="w-10 h-1 bg-gray-200 rounded-full"></div>
         </div>
-        <button (click)="close.emit()"
-          class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors text-lg leading-none">
-          ×
-        </button>
+
+        <!-- Header -->
+        <div class="px-5 py-3 flex items-center justify-between border-b border-gray-100">
+          <div>
+            <h2 class="font-bold text-gray-900 text-lg">⚡ Quick Split</h2>
+            <p class="text-xs text-gray-400 mt-0.5">No saving · instant result</p>
+          </div>
+          <button (click)="close.emit()" (pointerdown)="$event.stopPropagation()"
+            class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors text-lg leading-none">
+            ×
+          </button>
+        </div>
       </div>
 
-      <!-- Scrollable body -->
-      <div class="overflow-y-auto flex-1 px-5 py-4 space-y-5">
+      <!-- Scrollable body (drag down to close when scrolled to top) -->
+      <div #scrollBody class="overflow-y-auto flex-1 px-5 py-4 space-y-5"
+        style="overscroll-behavior: contain"
+        (touchstart)="onBodyTouchStart($event)"
+        (touchmove)="onBodyTouchMove($event)"
+        (touchend)="onDragEndTouch()"
+        (touchcancel)="onDragEndTouch()">
 
         <!-- Amount -->
         <div>
@@ -236,6 +252,81 @@ export class QuickSplitComponent {
   private router      = inject(Router);
   private tripService = inject(TripService);
   private ui          = inject(UiService);
+
+  @ViewChild('sheet') sheetRef?: ElementRef<HTMLElement>;
+  @ViewChild('scrollBody') scrollBodyRef?: ElementRef<HTMLElement>;
+
+  // ── Swipe-down-to-close gesture ──
+  readonly dragY    = signal(0);
+  readonly dragging = signal(false);
+  readonly entered  = signal(false);
+  private startY = 0;
+  private closing = false;
+
+  constructor() {
+    // Let the entry animation finish, then hand transform control to drag bindings.
+    setTimeout(() => this.entered.set(true), 300);
+  }
+
+  onDragStart(ev: PointerEvent): void {
+    if (this.closing) return;
+    this.startY = ev.clientY;
+    this.dragging.set(true);
+    (ev.target as HTMLElement).setPointerCapture?.(ev.pointerId);
+  }
+
+  onDragMove(ev: PointerEvent): void {
+    if (!this.dragging()) return;
+    const dy = ev.clientY - this.startY;
+    // Only allow downward drag; add slight resistance past the top.
+    this.dragY.set(dy > 0 ? dy : dy * 0.2);
+  }
+
+  onDragEnd(ev: PointerEvent): void {
+    if (!this.dragging()) return;
+    (ev.target as HTMLElement).releasePointerCapture?.(ev.pointerId);
+    this.finishDrag();
+  }
+
+  // ── Body drag (touch): only engages when scrolled to the top and pulling down ──
+  onBodyTouchStart(ev: TouchEvent): void {
+    if (this.closing) return;
+    this.startY = ev.touches[0].clientY;
+  }
+
+  onBodyTouchMove(ev: TouchEvent): void {
+    if (this.closing) return;
+    const dy = ev.touches[0].clientY - this.startY;
+    const atTop = (this.scrollBodyRef?.nativeElement.scrollTop ?? 0) <= 0;
+    if (atTop && dy > 0) {
+      // Take over: drag the sheet instead of (over)scrolling / pull-to-refresh.
+      ev.preventDefault();
+      this.dragging.set(true);
+      this.dragY.set(dy);
+    } else if (this.dragging()) {
+      // Finger moved back up past the top — release the sheet and resume scrolling.
+      this.dragging.set(false);
+      this.dragY.set(0);
+    }
+  }
+
+  onDragEndTouch(): void {
+    if (!this.dragging()) return;
+    this.finishDrag();
+  }
+
+  private finishDrag(): void {
+    this.dragging.set(false);
+    const height = this.sheetRef?.nativeElement.offsetHeight ?? 600;
+    // Dismiss if dragged past ~25% of the sheet height (or a 140px floor).
+    if (this.dragY() > Math.min(height * 0.25, 140)) {
+      this.closing = true;
+      this.dragY.set(height);            // slide fully off-screen, then close
+      setTimeout(() => this.close.emit(), 220);
+    } else {
+      this.dragY.set(0);                 // snap back
+    }
+  }
 
   readonly modes = [
     { key: 'equal'    as Mode, icon: '⚖️', label: 'Equal',    hint: 'Everyone pays same' },
