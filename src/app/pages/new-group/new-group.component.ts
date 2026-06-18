@@ -429,7 +429,7 @@ import { IconComponent } from '../../components/icon/icon.component';
               </div>
               <div class="border-t border-white/20 mt-3 pt-3 grid grid-cols-3 gap-2 text-center text-xs">
                 <div>
-                  <p class="text-emerald-200">Group</p>
+                  <p class="text-emerald-200">Split</p>
                   <p class="font-semibold truncate">{{ form().groupName }}</p>
                 </div>
                 <div>
@@ -640,7 +640,7 @@ export class NewGroupComponent {
       n: 4, label: 'Preview', icon: '✨',
       iconBg: 'bg-emerald-100', bannerBg: 'bg-emerald-50/40 border-emerald-100/60',
       badgeClass: 'bg-emerald-50 border-emerald-100 text-emerald-700',
-      desc: 'Review the breakdown and save your group',
+      desc: 'Review the breakdown and save your split',
     },
   ];
 
