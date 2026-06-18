@@ -8,7 +8,7 @@ import { UiService } from '../../services/ui.service';
 import { Group, Member, MemberShare, ExpenseConfig, ExtraItem } from '../../models/group.model';
 import { calculateShares } from '../../utils/calculator';
 import { formatCurrency, nanoid } from '../../utils/formatters';
-import { buildUpiUri, UpiRequest } from '../../utils/upi';
+import { buildUpiUri, buildUpiPayLink, UpiRequest } from '../../utils/upi';
 import { IconComponent } from '../../components/icon/icon.component';
 import { PayQrComponent } from '../../components/pay-qr/pay-qr.component';
 
@@ -40,6 +40,11 @@ import { PayQrComponent } from '../../components/pay-qr/pay-qr.component';
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
               </svg>
               {{ isSharing() ? 'Generating…' : 'Share' }}
+            </button>
+            <button (click)="shareBreakdown()" title="Share breakdown + pay links"
+              class="flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold text-emerald-600 border border-emerald-200 hover:bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors">
+              <app-icon name="qr-code" class="w-4 h-4"></app-icon>
+              Share + Pay
             </button>
             <button (click)="toggleArchive()" [title]="group()?.archived ? 'Unarchive' : 'Archive'"
               class="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-brand-600 hover:bg-gray-100 transition-colors">
@@ -686,6 +691,84 @@ export class GroupDetailComponent implements OnInit {
       amount: share.total,
       note: `${g.name} — ${share.memberName}`,
     });
+  }
+
+  // ─── Share: breakdown table + pay links ───────────────────────────
+  shareBreakdown(): void {
+    const g = this.group();
+    if (!g) return;
+    this.shareTextOut(this.buildBreakdownText(g), `${g.name} — Split Karo`);
+  }
+
+  private buildBreakdownText(g: Group): string {
+    const r = g.result;
+    const daywise = g.expenses.splitMode === 'daywise';
+    const c = this.collector();
+    const DIV = '------------------------------';
+
+    const lines: string[] = [];
+    lines.push(`🏠 *${g.name}*`);
+    lines.push(`🗓️ ${g.cycleLabel}`);
+    lines.push(`💰 Total spent: ${this.fmt(r.grandTotal)}`);
+
+    // What was spent (categories + named extras)
+    lines.push('', '*EXPENSES*', DIV);
+    if (r.totalRent > 0)                       lines.push(`🏠 Room Rent — ${this.fmt(r.totalRent)}`);
+    if (r.totalRation > 0)                     lines.push(`🛒 Ration — ${this.fmt(r.totalRation)}`);
+    if (r.totalVegetable > 0)                  lines.push(`🥦 Vegetable — ${this.fmt(r.totalVegetable)}`);
+    for (const it of (g.expenses.extraItems ?? [])) {
+      if (it.amount > 0) lines.push(`🧾 ${it.label || 'Other'} — ${this.fmt(it.amount)}`);
+    }
+
+    // Who already paid out of pocket
+    const prepaid = r.shares.filter(s => s.personalExpensePaid > 0);
+    if (prepaid.length) {
+      lines.push('', '*ALREADY PAID*', DIV);
+      for (const s of prepaid) lines.push(`👤 *${s.memberName}* paid ${this.fmt(s.personalExpensePaid)}`);
+    }
+
+    // Final position per member
+    lines.push('', '*FINAL SPLIT*', DIV);
+    for (const s of r.shares) {
+      const isC = !!c && s.memberId === c.id;
+      const tail = s.total > 0.01 ? `🔴 needs to pay ${this.fmt(s.total)}`
+                 : s.total < -0.01 ? `✅ gets back ${this.fmt(-s.total)}`
+                 : '⚪ settled';
+      const days = daywise ? ` (${s.daysPresent}d)` : '';
+      lines.push(`👤 *${s.memberName}*${days}${isC ? ' [collector]' : ''} — share ${this.fmt(s.grossTotal)}  →  ${tail}`);
+    }
+
+    // Payments to collector
+    if (c && (c.upiId ?? '').trim()) {
+      lines.push('', DIV, '', `*WHO PAYS WHOM*`, '');
+      for (const s of r.shares) {
+        if (s.total > 0.01 && s.memberId !== c.id) {
+          const link = buildUpiPayLink({ vpa: c.upiId!, name: c.name, amount: s.total, note: `${g.name} — ${s.memberName}` });
+          lines.push(`💸 ${s.memberName} pays ${c.name} ${this.fmt(s.total)}`, `   👉 ${link}`, '');
+        }
+      }
+    }
+    lines.push('_Made with Split Karo_');
+    return lines.join('\n');
+  }
+
+  private shareTextOut(text: string, title: string): void {
+    if (!text) return;
+    if (navigator.share) {
+      navigator.share({ title, text }).catch(() => {});
+      return;
+    }
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => this.ui.toast('Copied to clipboard', '📋'));
+      return;
+    }
+    // Insecure-context fallback (e.g. http LAN): textarea copy preserves newlines.
+    const ta = Object.assign(document.createElement('textarea'), { value: text });
+    Object.assign(ta.style, { position: 'fixed', top: '0', left: '0', opacity: '0' });
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy'); this.ui.toast('Copied to clipboard', '📋'); } catch {}
+    document.body.removeChild(ta);
   }
 
   goBack(): void {

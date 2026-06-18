@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { TripService } from '../../services/trip.service';
 import { UiService } from '../../services/ui.service';
 import { Trip, TripExpense, TripMember } from '../../models/trip.model';
-import { buildUpiUri, UpiRequest } from '../../utils/upi';
+import { buildUpiUri, buildUpiPayLink, UpiRequest } from '../../utils/upi';
 import { shareFor } from '../../utils/trip-calculator';
 import { IconComponent } from '../../components/icon/icon.component';
 import { PayQrComponent } from '../../components/pay-qr/pay-qr.component';
@@ -43,6 +43,11 @@ interface ExpenseEdit {
             class="flex items-center gap-1 text-xs font-semibold text-brand-600 border border-brand-200 hover:bg-brand-50 transition-colors px-2.5 py-1.5 rounded-lg">
             <app-icon name="share" class="w-3.5 h-3.5"></app-icon>
             Share
+          </button>
+          <button (click)="shareBreakdown()" title="Share breakdown + pay links"
+            class="flex items-center gap-1 text-xs font-semibold text-emerald-600 border border-emerald-200 hover:bg-emerald-50 transition-colors px-2.5 py-1.5 rounded-lg">
+            <app-icon name="qr-code" class="w-3.5 h-3.5"></app-icon>
+            Share + Pay
           </button>
           <button (click)="toggleArchive()" [title]="trip()?.archived ? 'Unarchive' : 'Archive'"
             class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-brand-600 hover:bg-gray-100 transition-colors flex-shrink-0">
@@ -661,6 +666,82 @@ export class TripDetailComponent {
       document.body.removeChild(ta);
       this.ui.toast('Summary copied');
     }
+  }
+
+  // ─── Share: breakdown table + pay links ───────────────────────────
+  shareBreakdown(): void {
+    const t = this.trip();
+    if (!t) return;
+    this.shareTextOut(this.buildBreakdownText(t), `${t.name} — Split Karo`);
+  }
+
+  private buildBreakdownText(t: Trip): string {
+    const rupee = (n: number) => '₹' + (Math.round(Math.abs(n) * 100) / 100).toLocaleString('en-IN');
+    const bals = this.memberBalances();
+    const DIV = '------------------------------';
+
+    const lines: string[] = [];
+    lines.push(`✈️ *${t.name}*`);
+    lines.push(`💰 Total spent: ${rupee(this.grandTotal())}  •  👥 ${t.members.length} members`);
+
+    if (t.expenses.length) {
+      lines.push('', '*WHO PAID WHAT*', DIV);
+      for (const m of t.members) {
+        const mine = t.expenses.filter(e => e.paidBy === m.id);
+        const paid = mine.reduce((a, e) => a + e.amount, 0);
+        lines.push(`👤 *${m.name}* spent ${rupee(paid)}`);
+        if (mine.length) {
+          for (const e of mine) lines.push(`   • ${e.description || 'Expense'} — ${rupee(e.amount)}`);
+        } else {
+          lines.push('   • nothing yet');
+        }
+        lines.push('');
+      }
+    }
+
+    lines.push('*FINAL SPLIT*', DIV);
+    for (const b of bals) {
+      const tail = b.balance > 0.01 ? `✅ gets back ${rupee(b.balance)}`
+                 : b.balance < -0.01 ? `🔴 needs to pay ${rupee(b.balance)}`
+                 : '⚪ settled';
+      lines.push(`👤 *${b.name}* — share ${rupee(b.owes)}  →  ${tail}`);
+    }
+
+    if (t.settlements.length === 0) {
+      lines.push('', DIV, '✅ Everyone is settled up!');
+    } else {
+      lines.push('', DIV, '', '*WHO PAYS WHOM*', '');
+      for (const s of t.settlements) {
+        lines.push(`💸 ${s.fromName} pays ${s.toName} ${rupee(s.amount)}${s.paid ? ' ✅' : ''}`);
+        const upi = this.payeeUpi(s.to);
+        if (!s.paid && upi) {
+          const link = buildUpiPayLink({ vpa: upi, name: s.toName, amount: s.amount, note: `Split: ${t.name}` });
+          lines.push(`   👉 ${link}`);
+        }
+        lines.push('');
+      }
+    }
+    lines.push('_Made with Split Karo_');
+    return lines.join('\n');
+  }
+
+  private shareTextOut(text: string, title: string): void {
+    if (!text) return;
+    if (navigator.share) {
+      navigator.share({ title, text }).catch(() => {});
+      return;
+    }
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => this.ui.toast('Copied to clipboard', '📋'));
+      return;
+    }
+    // Insecure-context fallback (e.g. http LAN): textarea copy preserves newlines.
+    const ta = Object.assign(document.createElement('textarea'), { value: text });
+    Object.assign(ta.style, { position: 'fixed', top: '0', left: '0', opacity: '0' });
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy'); this.ui.toast('Copied to clipboard', '📋'); } catch {}
+    document.body.removeChild(ta);
   }
 
   async deleteTrip(): Promise<void> {
