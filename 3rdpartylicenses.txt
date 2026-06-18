@@ -248,6 +248,9 @@ Apache License
 
 
 
+qrcode-generator
+MIT
+
 rxjs
 Apache-2.0
                                Apache License
