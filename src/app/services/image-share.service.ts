@@ -48,7 +48,7 @@ export class ImageShareService {
 
   async shareImage(g: Group): Promise<void> {
     const blob     = await this.generateSummaryImage(g);
-    const filename = `split-karo-${g.name.replace(/\s+/g, '-').toLowerCase()}.png`;
+    const filename = this.buildFilename(g);
     const file     = new File([blob], filename, { type: 'image/png' });
 
     if (navigator.canShare?.({ files: [file] })) {
@@ -415,6 +415,23 @@ export class ImageShareService {
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
+
+  // Group-first filename so a group's months cluster in the gallery:
+  //   room-5-dec-jan-2025.png · flat-2b-may-jun-2026.png
+  private buildFilename(g: Group): string {
+    const MON = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+    const slug = (s: string) => s.replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'split';
+    const name = slug(g.name);
+    if (g.fromDate && g.toDate) {
+      const f = new Date(g.fromDate + 'T00:00:00');
+      const t = new Date(g.toDate + 'T00:00:00');
+      const span = f.getMonth() === t.getMonth()
+        ? MON[f.getMonth()]
+        : `${MON[f.getMonth()]}-${MON[t.getMonth()]}`;
+      return `${name}-${span}-${f.getFullYear()}.png`;
+    }
+    return `${name}.png`;
+  }
 
   private roundRect(
     ctx: CanvasRenderingContext2D,

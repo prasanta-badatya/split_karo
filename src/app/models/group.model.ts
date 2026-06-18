@@ -63,6 +63,8 @@ export interface Group {
   name: string;          // snapshot of roster name at split time
   rosterId: string;      // owning roster
   cycleLabel: string;
+  fromDate: string;      // billing period start (YYYY-MM-DD)
+  toDate: string;        // billing period end (YYYY-MM-DD)
   createdAt: string;
   expenses: ExpenseConfig;
   members: Member[];

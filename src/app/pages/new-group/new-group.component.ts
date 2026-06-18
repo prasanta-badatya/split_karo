@@ -726,6 +726,8 @@ export class NewGroupComponent {
       name: f.groupName,
       rosterId: this.rosterId,
       cycleLabel: this.cycleLabel(),
+      fromDate: f.fromDate,
+      toDate: f.toDate,
       createdAt: new Date().toISOString(),
       expenses: f.expenses,
       members: f.members,
