@@ -8,10 +8,14 @@ declare global {
 }
 
 const C = {
-  BRAND_500: '#6366f1',
+  BRAND_700: '#4338ca',
   BRAND_600: '#4f46e5',
+  BRAND_500: '#6366f1',
+  BRAND_100: '#e0e7ff',
   BRAND_50:  '#eef2ff',
+  BRAND_25:  '#f5f7ff',   // ultra-light tint for zebra rows
   SUCCESS:   '#10b981',
+  SUCCESS_700: '#047857',
   GRAY_900:  '#111827',
   GRAY_700:  '#374151',
   GRAY_500:  '#6b7280',
@@ -226,16 +230,19 @@ export class ImageShareService {
       y += 36;
     }
 
-    // Grand Total row
-    ctx.font      = 'bold 15px Inter, system-ui, sans-serif';
-    ctx.fillStyle = C.GRAY_900;
-    ctx.textAlign = 'left';
-    ctx.fillText('Grand Total', 40, y + 10);
+    // Grand Total row — brand-tinted band
+    this.roundRect(ctx, 40, y - 8, w - 80, 40, 10);
+    ctx.fillStyle = C.BRAND_50; ctx.fill();
+    ctx.font      = '800 15px Inter, system-ui, sans-serif';
+    ctx.fillStyle = C.BRAND_700;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('Grand Total', 52, y + 12);
 
-    ctx.font      = 'bold 20px Inter, system-ui, sans-serif';
-    ctx.fillStyle = C.BRAND_500;
+    ctx.font      = '800 20px Inter, system-ui, sans-serif';
+    ctx.fillStyle = C.BRAND_600;
     ctx.textAlign = 'right';
-    ctx.fillText(this.rupee(g.result.grandTotal), w - 40, y + 12);
+    ctx.fillText(this.rupee(g.result.grandTotal), w - 52, y + 12);
+    ctx.textBaseline = 'alphabetic';
 
     // Average line
     const avgY = y + 44 + 20;
@@ -303,17 +310,17 @@ export class ImageShareService {
     ctx.fillText('MEMBER BREAKDOWN', pad, y);
     y += 24;
 
-    // Column header row
-    ctx.font = '600 10px Inter, system-ui, sans-serif';
-    ctx.fillStyle = C.GRAY_400;
-    ctx.textAlign = 'left';
-    ctx.fillText('MEMBER', pad, y + 14);
+    // Column header row — brand-tinted band
+    const headH = 28;
+    this.roundRect(ctx, pad, y, w - pad * 2, headH, 8);
+    ctx.fillStyle = C.BRAND_50; ctx.fill();
+    ctx.font = '700 10px Inter, system-ui, sans-serif';
+    ctx.fillStyle = C.BRAND_700;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('MEMBER', pad + 12, y + headH / 2);
     ctx.textAlign = 'right';
-    cols.forEach((c, i) => ctx.fillText(c.label.toUpperCase(), rightEdges[i], y + 14));
-    y += 24;
-    // header underline
-    ctx.strokeStyle = C.GRAY_200; ctx.lineWidth = 1; ctx.setLineDash([]);
-    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w - pad, y); ctx.stroke();
+    cols.forEach((c, i) => ctx.fillText(c.label.toUpperCase(), rightEdges[i], y + headH / 2));
+    y += headH + 2;
 
     const rowH = 40;
     for (let i = 0; i < shares.length; i++) {
@@ -321,12 +328,18 @@ export class ImageShareService {
       const isDebt = s.total >= 0;
       const midY = y + rowH / 2;
 
+      // Zebra background for odd rows
+      if (i % 2 === 1) {
+        ctx.fillStyle = C.BRAND_25;
+        ctx.fillRect(pad, y, w - pad * 2, rowH);
+      }
+
       // Avatar + name
       ctx.beginPath();
       ctx.arc(pad + 16, midY, 14, 0, Math.PI * 2);
-      ctx.fillStyle = C.BRAND_50; ctx.fill();
+      ctx.fillStyle = C.BRAND_100; ctx.fill();
       ctx.font = 'bold 11px Inter, system-ui, sans-serif';
-      ctx.fillStyle = C.BRAND_600;
+      ctx.fillStyle = C.BRAND_700;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(s.memberName.slice(0, 2).toUpperCase(), pad + 16, midY);
 
@@ -339,33 +352,31 @@ export class ImageShareService {
       cols.forEach((c, idx) => {
         const isPay = c.key === 'pay';
         ctx.font = isPay ? 'bold 13px Inter, system-ui, sans-serif' : '12px Inter, system-ui, sans-serif';
-        ctx.fillStyle = isPay ? (isDebt ? C.BRAND_600 : C.SUCCESS) : C.GRAY_700;
+        ctx.fillStyle = isPay ? (isDebt ? C.BRAND_600 : C.SUCCESS_700) : C.GRAY_700;
         ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
         ctx.fillText(c.cell(s), rightEdges[idx], midY);
       });
 
-      // light row separator
-      ctx.strokeStyle = C.GRAY_100; ctx.lineWidth = 1; ctx.setLineDash([]);
-      ctx.beginPath(); ctx.moveTo(pad, y + rowH); ctx.lineTo(w - pad, y + rowH); ctx.stroke();
       y += rowH;
     }
 
-    // TOTAL row
-    ctx.strokeStyle = C.GRAY_400; ctx.lineWidth = 1.2; ctx.setLineDash([]);
-    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w - pad, y); ctx.stroke();
-    const totMid = y + 22;
-    ctx.font = 'bold 12px Inter, system-ui, sans-serif';
-    ctx.fillStyle = C.GRAY_900;
+    // TOTAL row — brand band, bold brand text
+    const totH = 40;
+    this.roundRect(ctx, pad, y + 4, w - pad * 2, totH, 8);
+    ctx.fillStyle = C.BRAND_50; ctx.fill();
+    const totMid = y + 4 + totH / 2;
+    ctx.font = '800 12px Inter, system-ui, sans-serif';
+    ctx.fillStyle = C.BRAND_700;
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText('TOTAL', pad, totMid);
+    ctx.fillText('TOTAL', pad + 12, totMid);
     cols.forEach((c, idx) => {
       if (!c.total) return;
-      ctx.font = c.key === 'pay' ? 'bold 13px Inter, system-ui, sans-serif' : 'bold 12px Inter, system-ui, sans-serif';
-      ctx.fillStyle = c.key === 'pay' ? C.BRAND_600 : C.GRAY_900;
+      ctx.font = '800 12px Inter, system-ui, sans-serif';
+      ctx.fillStyle = C.BRAND_700;
       ctx.textAlign = 'right';
       ctx.fillText(c.total, rightEdges[idx], totMid);
     });
-    return y + 44;
+    return y + 4 + totH;
   }
 
   private drawVerification(
