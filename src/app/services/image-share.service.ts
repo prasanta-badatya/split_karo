@@ -14,6 +14,7 @@ const C = {
   SUCCESS:   '#10b981',
   GRAY_900:  '#111827',
   GRAY_700:  '#374151',
+  GRAY_500:  '#6b7280',
   GRAY_400:  '#9ca3af',
   GRAY_200:  '#e5e7eb',
   GRAY_100:  '#f3f4f6',
@@ -68,8 +69,7 @@ export class ImageShareService {
       + (g.result.totalRation    > 0 ? 1 : 0)
       + (g.result.totalVegetable > 0 ? 1 : 0)
       + (g.expenses.extraItems?.filter(i => i.amount > 0).length ?? 0);
-    const hasPaid = g.result.shares.some(s => s.personalExpensePaid > 0);
-    const rowH = 68 + (hasPaid ? 16 : 0);
+    const rowH = 88;                   // name + breakdown line + status line
     return (
       120                              // header
       + 20                             // gap below header
@@ -249,8 +249,7 @@ export class ImageShareService {
     startY: number,
   ): number {
     const daywise = g.expenses.splitMode === 'daywise';
-    const hasPaid = g.result.shares.some(s => s.personalExpensePaid > 0);
-    const rowH = 68 + (hasPaid ? 16 : 0);
+    const rowH = 88;
     let y = startY + 8;
 
     // Section label
@@ -267,9 +266,9 @@ export class ImageShareService {
       const isDebt = share.total >= 0;
 
       // Avatar circle
-      const avatarY = y + 28;
+      const avatarY = y + 20;
       ctx.beginPath();
-      ctx.arc(56, avatarY, 22, 0, Math.PI * 2);
+      ctx.arc(56, avatarY, 20, 0, Math.PI * 2);
       ctx.fillStyle = C.BRAND_50;
       ctx.fill();
       ctx.font         = 'bold 13px Inter, system-ui, sans-serif';
@@ -283,38 +282,40 @@ export class ImageShareService {
       ctx.fillStyle    = C.GRAY_900;
       ctx.textAlign    = 'left';
       ctx.textBaseline = 'alphabetic';
-      ctx.fillText(this.truncate(ctx, share.memberName, w - 40 - 90 - 160), 90, y + 18);
+      ctx.fillText(this.truncate(ctx, share.memberName, w - 40 - 90 - 130), 90, y + 14);
 
-      // Sub-line: chips (days · paid · status)
-      let chipX = 90;
-      const chipY = y + 36;
-      ctx.font      = '11px Inter, system-ui, sans-serif';
-
-      if (daywise) {
-        ctx.fillStyle = C.BRAND_500;
-        ctx.fillText(`${share.daysPresent}d`, chipX, chipY);
-        chipX += ctx.measureText(`${share.daysPresent}d`).width + 10;
-        ctx.fillStyle = C.GRAY_200;
-        ctx.fillText('·', chipX - 6, chipY);
-      }
-
-      if (share.personalExpensePaid > 0) {
-        ctx.fillStyle = '#059669';
-        ctx.fillText(`Paid ${this.rupee(share.personalExpensePaid)}`, chipX, chipY);
-        chipX += ctx.measureText(`Paid ${this.rupee(share.personalExpensePaid)}`).width + 10;
-        ctx.fillStyle = C.GRAY_200;
-        ctx.fillText('·', chipX - 6, chipY);
-      }
-
-      ctx.fillStyle = isDebt ? C.GRAY_400 : C.SUCCESS;
-      ctx.fillText(isDebt ? 'Pays' : 'Gets back', chipX, chipY);
-
-      // Net pay amount (right side)
+      // Net pay amount (right side, aligned with name)
       ctx.font         = 'bold 18px Inter, system-ui, sans-serif';
       ctx.fillStyle    = isDebt ? C.BRAND_600 : C.SUCCESS;
       ctx.textAlign    = 'right';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(this.rupee(share.total), w - 40, y + 28);
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(this.rupee(share.total), w - 40, y + 16);
+
+      // Breakdown line: how the net is composed (the "proof")
+      const parts: string[] = [];
+      if (share.rentShare       > 0) parts.push(`Rent ${this.rupee(share.rentShare)}`);
+      if (share.rationVegShare  > 0) parts.push(`Ration+Veg ${this.rupee(share.rationVegShare)}`);
+      if (share.extraShare      > 0) parts.push(`Extra ${this.rupee(share.extraShare)}`);
+      let breakdown = parts.join(' · ');
+      if (share.personalExpensePaid > 0) breakdown += `  −Paid ${this.rupee(share.personalExpensePaid)}`;
+      ctx.font         = '11px Inter, system-ui, sans-serif';
+      ctx.fillStyle    = C.GRAY_500;
+      ctx.textAlign    = 'left';
+      ctx.fillText(this.truncate(ctx, breakdown, w - 90 - 40), 90, y + 36);
+
+      // Status line (+ days for daywise)
+      let chipX = 90;
+      const chipY = y + 56;
+      ctx.font = '11px Inter, system-ui, sans-serif';
+      if (daywise) {
+        ctx.fillStyle = C.BRAND_500;
+        ctx.fillText(`${share.daysPresent}d present`, chipX, chipY);
+        chipX += ctx.measureText(`${share.daysPresent}d present`).width + 12;
+        ctx.fillStyle = C.GRAY_200;
+        ctx.fillText('·', chipX - 8, chipY);
+      }
+      ctx.fillStyle = isDebt ? C.GRAY_400 : C.SUCCESS;
+      ctx.fillText(isDebt ? 'Pays' : 'Gets back', chipX, chipY);
 
       // Row separator
       if (i < shares.length - 1) {
