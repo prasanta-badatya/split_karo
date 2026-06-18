@@ -267,44 +267,6 @@ import { PayQrComponent } from '../../components/pay-qr/pay-qr.component';
           </div>
         </div>
 
-        <!-- Settle Up via UPI -->
-        <div *ngIf="!isEditing() && groupSettlements().length > 0" class="mb-4">
-          <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-1">Settle Up</h2>
-          <div class="space-y-2">
-            <div *ngFor="let s of groupSettlements()"
-              class="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
-              <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center text-xs font-bold flex-shrink-0">
-                  {{ s.fromName.slice(0,2).toUpperCase() }}
-                </div>
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm font-semibold text-gray-900">
-                    <span class="text-rose-500">{{ s.fromName }}</span>
-                    <span class="text-gray-400 font-normal mx-1">pays</span>
-                    <span class="text-brand-600">{{ s.toName }}</span>
-                  </p>
-                  <p class="text-base font-bold text-gray-900 mt-0.5">{{ fmt(s.amount) }}</p>
-                </div>
-              </div>
-              <div class="flex items-center gap-2 mt-2.5">
-                <a *ngIf="payeeUpi(s.toId)" [href]="upiLink(s)"
-                  class="flex-1 text-center text-xs font-bold px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white transition-colors">
-                  💸 Pay {{ s.toName }} via UPI
-                </a>
-                <button *ngIf="payeeUpi(s.toId)" (click)="openPayQr(s)" title="Show QR / share pay link"
-                  class="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition-colors">
-                  <app-icon name="qr-code" class="w-4 h-4"></app-icon>
-                </button>
-                <a [href]="whatsappLink(s)" target="_blank" rel="noopener"
-                  class="text-xs font-semibold px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
-                  [ngClass]="payeeUpi(s.toId) ? 'flex-shrink-0' : 'flex-1 text-center'">
-                  💬 Remind on WhatsApp
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- Collected by (UPI QR target) -->
         <div *ngIf="!isEditing()" class="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 mb-4">
           <div class="flex items-center justify-between gap-3 flex-wrap">
@@ -383,11 +345,20 @@ import { PayQrComponent } from '../../components/pay-qr/pay-qr.component';
                         class="text-xs font-semibold px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap">
                         {{ isPaid(share.memberId) ? '✓ Paid' : 'Mark Paid' }}
                       </button>
+                      <a *ngIf="canMemberPayQr(share)" [href]="memberPayHref(share)" title="Pay now via UPI"
+                        class="w-7 h-7 flex items-center justify-center rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition-colors flex-shrink-0">
+                        <app-icon name="credit-card" class="w-4 h-4"></app-icon>
+                      </a>
                       <button *ngIf="canMemberPayQr(share)" (click)="openMemberPayQr(share)"
                         title="Show QR / share pay link"
                         class="w-7 h-7 flex items-center justify-center rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition-colors flex-shrink-0">
                         <app-icon name="qr-code" class="w-4 h-4"></app-icon>
                       </button>
+                      <a *ngIf="canMemberPayQr(share)" [href]="memberWhatsapp(share)" target="_blank" rel="noopener"
+                        title="Remind on WhatsApp"
+                        class="w-7 h-7 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 transition-colors flex-shrink-0">
+                        <app-icon name="message" class="w-4 h-4"></app-icon>
+                      </a>
                     </div>
                     <span *ngIf="share.total <= 0" class="text-xs text-emerald-500 font-medium">Gets back</span>
                   </td>
@@ -440,10 +411,19 @@ import { PayQrComponent } from '../../components/pay-qr/pay-qr.component';
                       class="text-xs font-semibold px-2 py-0.5 rounded-full border transition-colors">
                       {{ isPaid(share.memberId) ? '✓ Paid' : 'Mark Paid' }}
                     </button>
+                    <a *ngIf="canMemberPayQr(share)" [href]="memberPayHref(share)" title="Pay now via UPI"
+                      class="w-7 h-7 flex items-center justify-center rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition-colors flex-shrink-0">
+                      <app-icon name="credit-card" class="w-4 h-4"></app-icon>
+                    </a>
                     <button *ngIf="canMemberPayQr(share)" (click)="openMemberPayQr(share)"
                       class="w-7 h-7 flex items-center justify-center rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition-colors flex-shrink-0">
                       <app-icon name="qr-code" class="w-4 h-4"></app-icon>
                     </button>
+                    <a *ngIf="canMemberPayQr(share)" [href]="memberWhatsapp(share)" target="_blank" rel="noopener"
+                      title="Remind on WhatsApp"
+                      class="w-7 h-7 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 transition-colors flex-shrink-0">
+                      <app-icon name="message" class="w-4 h-4"></app-icon>
+                    </a>
                   </div>
                 </div>
               </div>
@@ -691,6 +671,25 @@ export class GroupDetailComponent implements OnInit {
       amount: share.total,
       note: `${g.name} — ${share.memberName}`,
     });
+  }
+
+  // Direct UPI deep-link: this member pays their share to the collector.
+  memberPayHref(share: MemberShare): string {
+    const g = this.group();
+    const c = this.collector();
+    if (!g || !c) return '';
+    return buildUpiUri(c.upiId ?? '', c.name, share.total, `${g.name} — ${share.memberName}`);
+  }
+
+  // WhatsApp reminder for this member to pay the collector.
+  memberWhatsapp(share: MemberShare): string {
+    const g = this.group();
+    const c = this.collector();
+    if (!g || !c) return '';
+    let text = `Hi ${share.memberName}, please pay ${this.fmt(share.total)} to ${c.name} for "${g.name}"`;
+    if ((c.upiId ?? '').trim()) text += `. UPI: ${c.upiId}`;
+    text += ' — via Split Karo';
+    return `https://wa.me/?text=${encodeURIComponent(text)}`;
   }
 
   // ─── Share: breakdown table + pay links ───────────────────────────

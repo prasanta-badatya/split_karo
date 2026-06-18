@@ -91,11 +91,30 @@ export class PayQrComponent {
     const link = this.payLink();
     if (!link) return;
     try {
-      await navigator.clipboard.writeText(link);
-      this.copied.set(true);
-      setTimeout(() => this.copied.set(false), 1800);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(link);
+      } else {
+        this.copyViaTextarea(link);
+      }
+      this.flashCopied();
     } catch {
-      window.prompt('Copy this pay link:', link);
+      this.copyViaTextarea(link);
+      this.flashCopied();
     }
+  }
+
+  private flashCopied(): void {
+    this.copied.set(true);
+    setTimeout(() => this.copied.set(false), 1800);
+  }
+
+  // Clipboard fallback for insecure contexts (http LAN) — copies directly, no prompt.
+  private copyViaTextarea(text: string): void {
+    const ta = Object.assign(document.createElement('textarea'), { value: text });
+    Object.assign(ta.style, { position: 'fixed', top: '0', left: '0', opacity: '0' });
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy'); } catch {}
+    document.body.removeChild(ta);
   }
 }
