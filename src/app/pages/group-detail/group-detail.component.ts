@@ -5,16 +5,17 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { GroupService } from '../../services/group.service';
 import { ImageShareService } from '../../services/image-share.service';
 import { UiService } from '../../services/ui.service';
-import { Group, Member, ExpenseConfig, ExtraItem } from '../../models/group.model';
+import { Group, Member, MemberShare, ExpenseConfig, ExtraItem } from '../../models/group.model';
 import { calculateShares } from '../../utils/calculator';
 import { formatCurrency, nanoid } from '../../utils/formatters';
-import { buildUpiUri } from '../../utils/upi';
+import { buildUpiUri, UpiRequest } from '../../utils/upi';
 import { IconComponent } from '../../components/icon/icon.component';
+import { PayQrComponent } from '../../components/pay-qr/pay-qr.component';
 
 @Component({
   selector: 'app-group-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, IconComponent],
+  imports: [CommonModule, FormsModule, IconComponent, PayQrComponent],
   template: `
     <div class="min-h-screen bg-slate-50">
 
@@ -285,6 +286,10 @@ import { IconComponent } from '../../components/icon/icon.component';
                   class="flex-1 text-center text-xs font-bold px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white transition-colors">
                   💸 Pay {{ s.toName }} via UPI
                 </a>
+                <button *ngIf="payeeUpi(s.toId)" (click)="openPayQr(s)" title="Show QR / share pay link"
+                  class="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition-colors">
+                  <app-icon name="qr-code" class="w-4 h-4"></app-icon>
+                </button>
                 <a [href]="whatsappLink(s)" target="_blank" rel="noopener"
                   class="text-xs font-semibold px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
                   [ngClass]="payeeUpi(s.toId) ? 'flex-shrink-0' : 'flex-1 text-center'">
@@ -292,6 +297,26 @@ import { IconComponent } from '../../components/icon/icon.component';
                 </a>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Collected by (UPI QR target) -->
+        <div *ngIf="!isEditing()" class="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 mb-4">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div class="min-w-0">
+              <h2 class="font-bold text-gray-900 text-sm">💸 Collected by</h2>
+              <p class="text-xs text-gray-400 mt-0.5">Everyone pays their share to this member via UPI QR.</p>
+            </div>
+            <select *ngIf="collectorMembers().length > 0"
+              [ngModel]="g.collectorId || ''" (ngModelChange)="setCollector($event)"
+              class="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-400">
+              <option value="">— none —</option>
+              <option *ngFor="let m of collectorMembers()" [value]="m.id">{{ m.name }}</option>
+            </select>
+            <span *ngIf="collectorMembers().length === 0"
+              class="text-xs text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
+              Add a UPI ID to a member (Edit) to enable QR collect.
+            </span>
           </div>
         </div>
 
@@ -344,14 +369,21 @@ import { IconComponent } from '../../components/icon/icon.component';
                     {{ share.personalExpensePaid > 0 ? '−' + fmt(share.personalExpensePaid) : '—' }}
                   </td>
                   <td class="py-4 px-4 text-center">
-                    <button *ngIf="share.total > 0"
-                      (click)="togglePaid(share.memberId)"
-                      [ngClass]="isPaid(share.memberId)
-                        ? 'bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200'
-                        : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'"
-                      class="text-xs font-semibold px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap">
-                      {{ isPaid(share.memberId) ? '✓ Paid' : 'Mark Paid' }}
-                    </button>
+                    <div class="flex items-center justify-center gap-1.5">
+                      <button *ngIf="share.total > 0"
+                        (click)="togglePaid(share.memberId)"
+                        [ngClass]="isPaid(share.memberId)
+                          ? 'bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200'
+                          : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'"
+                        class="text-xs font-semibold px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap">
+                        {{ isPaid(share.memberId) ? '✓ Paid' : 'Mark Paid' }}
+                      </button>
+                      <button *ngIf="canMemberPayQr(share)" (click)="openMemberPayQr(share)"
+                        title="Show QR / share pay link"
+                        class="w-7 h-7 flex items-center justify-center rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition-colors flex-shrink-0">
+                        <app-icon name="qr-code" class="w-4 h-4"></app-icon>
+                      </button>
+                    </div>
                     <span *ngIf="share.total <= 0" class="text-xs text-emerald-500 font-medium">Gets back</span>
                   </td>
                   <td class="py-4 px-5 text-right">
@@ -394,14 +426,20 @@ import { IconComponent } from '../../components/icon/icon.component';
                   <p class="text-xs" [ngClass]="share.total < 0 ? 'text-emerald-400' : 'text-gray-400'">
                     {{ share.total < 0 ? 'Gets back' : 'Pays' }}
                   </p>
-                  <button *ngIf="share.total > 0"
-                    (click)="togglePaid(share.memberId)"
-                    [ngClass]="isPaid(share.memberId)
-                      ? 'bg-emerald-100 text-emerald-700 border-emerald-300'
-                      : 'bg-gray-100 text-gray-500 border-gray-200'"
-                    class="text-xs font-semibold px-2 py-0.5 rounded-full border transition-colors">
-                    {{ isPaid(share.memberId) ? '✓ Paid' : 'Mark Paid' }}
-                  </button>
+                  <div class="flex items-center gap-1.5">
+                    <button *ngIf="share.total > 0"
+                      (click)="togglePaid(share.memberId)"
+                      [ngClass]="isPaid(share.memberId)
+                        ? 'bg-emerald-100 text-emerald-700 border-emerald-300'
+                        : 'bg-gray-100 text-gray-500 border-gray-200'"
+                      class="text-xs font-semibold px-2 py-0.5 rounded-full border transition-colors">
+                      {{ isPaid(share.memberId) ? '✓ Paid' : 'Mark Paid' }}
+                    </button>
+                    <button *ngIf="canMemberPayQr(share)" (click)="openMemberPayQr(share)"
+                      class="w-7 h-7 flex items-center justify-center rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition-colors flex-shrink-0">
+                      <app-icon name="qr-code" class="w-4 h-4"></app-icon>
+                    </button>
+                  </div>
                 </div>
               </div>
               <div class="bg-gray-50 rounded-xl p-3 space-y-1.5 text-xs">
@@ -430,6 +468,9 @@ import { IconComponent } from '../../components/icon/icon.component';
           </div>
         </div>
       </div>
+
+      <!-- ═══ PAY QR SHEET ═══ -->
+      <app-pay-qr *ngIf="payReq() as r" [req]="r" (closed)="payReq.set(null)"></app-pay-qr>
     </div>
   `,
 })
@@ -569,6 +610,18 @@ export class GroupDetailComponent implements OnInit {
     return buildUpiUri(this.payeeUpi(s.toId), s.toName, s.amount, g ? `${g.name}` : 'Split Karo');
   }
 
+  // QR / shareable pay-link sheet
+  readonly payReq = signal<UpiRequest | null>(null);
+  openPayQr(s: { toId: string; toName: string; amount: number }): void {
+    const g = this.group();
+    this.payReq.set({
+      vpa: this.payeeUpi(s.toId),
+      name: s.toName,
+      amount: s.amount,
+      note: g ? `${g.name}` : 'Split Karo',
+    });
+  }
+
   whatsappLink(s: { fromName: string; toId: string; toName: string; amount: number }): string {
     const g = this.group();
     const amt = this.fmt(s.amount);
@@ -600,6 +653,39 @@ export class GroupDetailComponent implements OnInit {
 
   async togglePaid(memberId: string): Promise<void> {
     await this.groupService.toggleMemberPaid(this.groupId(), memberId);
+  }
+
+  // ─── Collector (UPI QR target for home/ration splits) ─────────────
+  collectorMembers(): Member[] {
+    return this.group()?.members.filter(m => (m.upiId ?? '').trim()) ?? [];
+  }
+
+  collector(): Member | undefined {
+    const g = this.group();
+    return g?.members.find(m => m.id === g.collectorId);
+  }
+
+  async setCollector(id: string): Promise<void> {
+    const g = this.group();
+    if (!g) return;
+    await this.groupService.updateGroup({ ...g, collectorId: id || undefined });
+  }
+
+  canMemberPayQr(share: MemberShare): boolean {
+    const c = this.collector();
+    return !!c && !!(c.upiId ?? '').trim() && share.total > 0.01 && share.memberId !== c.id;
+  }
+
+  openMemberPayQr(share: MemberShare): void {
+    const g = this.group();
+    const c = this.collector();
+    if (!g || !c) return;
+    this.payReq.set({
+      vpa: c.upiId ?? '',
+      name: c.name,
+      amount: share.total,
+      note: `${g.name} — ${share.memberName}`,
+    });
   }
 
   goBack(): void {

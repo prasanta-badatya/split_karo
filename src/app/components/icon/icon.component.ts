@@ -59,6 +59,19 @@ import { CommonModule } from '@angular/common';
       <ng-container *ngSwitchCase="'x'">
         <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
       </ng-container>
+      <ng-container *ngSwitchCase="'check'">
+        <path d="M20 6 9 17l-5-5"/>
+      </ng-container>
+      <ng-container *ngSwitchCase="'link'">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+      </ng-container>
+      <ng-container *ngSwitchCase="'qr-code'">
+        <rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/>
+        <rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/>
+        <path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/>
+        <path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/>
+      </ng-container>
     </svg>
   `,
   styles: [':host { display: inline-flex; line-height: 0; }'],

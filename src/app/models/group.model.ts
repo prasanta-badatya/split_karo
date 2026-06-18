@@ -70,6 +70,7 @@ export interface Group {
   members: Member[];
   result: CalculationResult;
   paidMembers?: Record<string, boolean>;
+  collectorId?: string;  // member who collects everyone's share (UPI QR target)
   archived?: boolean;
 }
 

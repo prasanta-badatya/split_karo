@@ -5,9 +5,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { TripService } from '../../services/trip.service';
 import { UiService } from '../../services/ui.service';
 import { Trip, TripExpense, TripMember } from '../../models/trip.model';
-import { buildUpiUri } from '../../utils/upi';
+import { buildUpiUri, UpiRequest } from '../../utils/upi';
 import { shareFor } from '../../utils/trip-calculator';
 import { IconComponent } from '../../components/icon/icon.component';
+import { PayQrComponent } from '../../components/pay-qr/pay-qr.component';
 
 interface ExpenseEdit {
   id: string;
@@ -23,7 +24,7 @@ interface ExpenseEdit {
 @Component({
   selector: 'app-trip-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, IconComponent],
+  imports: [CommonModule, FormsModule, IconComponent, PayQrComponent],
   template: `
     <div class="min-h-screen bg-slate-50 flex flex-col">
 
@@ -139,6 +140,10 @@ interface ExpenseEdit {
                   class="flex-1 text-center text-xs font-bold px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white transition-colors">
                   💸 Pay {{ s.toName }} via UPI
                 </a>
+                <button *ngIf="payeeUpi(s.to)" (click)="openPayQr(s)" title="Show QR / share pay link"
+                  class="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition-colors">
+                  <app-icon name="qr-code" class="w-4 h-4"></app-icon>
+                </button>
                 <a [href]="whatsappLink(s)" target="_blank" rel="noopener"
                   class="text-xs font-semibold px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
                   [ngClass]="payeeUpi(s.to) ? 'flex-shrink-0' : 'flex-1 text-center'">
@@ -354,6 +359,9 @@ interface ExpenseEdit {
           </div>
         </div>
       </div>
+
+      <!-- ═══ PAY QR SHEET ═══ -->
+      <app-pay-qr *ngIf="payReq() as r" [req]="r" (closed)="payReq.set(null)"></app-pay-qr>
     </div>
   `,
   styles: [`
@@ -436,6 +444,18 @@ export class TripDetailComponent {
   upiLink(s: { to: string; toName: string; amount: number }): string {
     const t = this.trip();
     return buildUpiUri(this.payeeUpi(s.to), s.toName, s.amount, t ? `Split: ${t.name}` : 'Split Karo');
+  }
+
+  // QR / shareable pay-link sheet
+  readonly payReq = signal<UpiRequest | null>(null);
+  openPayQr(s: { to: string; toName: string; amount: number }): void {
+    const t = this.trip();
+    this.payReq.set({
+      vpa: this.payeeUpi(s.to),
+      name: s.toName,
+      amount: s.amount,
+      note: t ? `Split: ${t.name}` : 'Split Karo',
+    });
   }
 
   whatsappLink(s: { fromName: string; toName: string; amount: number; to: string }): string {

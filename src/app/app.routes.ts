@@ -11,5 +11,6 @@ export const routes: Routes = [
   { path: 'trips/new', title: 'New Trip — Split Karo', loadComponent: () => import('./pages/new-trip/new-trip.component').then(m => m.NewTripComponent) },
   { path: 'trip/:id', title: 'Trip — Split Karo', loadComponent: () => import('./pages/trip-detail/trip-detail.component').then(m => m.TripDetailComponent) },
   { path: 'settings', title: 'Settings — Split Karo', loadComponent: () => import('./pages/settings/settings.component').then(m => m.SettingsComponent) },
+  { path: 'pay', title: 'Pay via UPI — Split Karo', loadComponent: () => import('./pages/pay/pay.component').then(m => m.PayComponent) },
   { path: '**', redirectTo: '' },
 ];
