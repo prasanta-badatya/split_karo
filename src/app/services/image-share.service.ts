@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Group } from '../models/group.model';
+import { Group, MemberShare } from '../models/group.model';
 
 declare global {
   interface Navigator {
@@ -26,7 +26,7 @@ const C = {
 export class ImageShareService {
 
   async generateSummaryImage(g: Group): Promise<Blob> {
-    const W   = 720;
+    const W   = this.computeWidth(g);
     const DPR = Math.min(window.devicePixelRatio ?? 2, 3);
     const H   = this.computeHeight(g);
     const { canvas, ctx } = this.createCanvas(W, H, DPR);
@@ -64,12 +64,45 @@ export class ImageShareService {
 
   // ─── Layout ────────────────────────────────────────────────────────────────
 
+  // Active numeric columns for the member table — only those with data, mirroring
+  // the on-screen review/detail tables. Each carries a per-member value + a TOTAL.
+  private numericCols(g: Group): {
+    key: string; label: string; width: number;
+    cell: (s: MemberShare) => string;
+    total: string;
+  }[] {
+    const r = g.result;
+    const daywise   = g.expenses.splitMode === 'daywise';
+    const hasExtra  = r.totalExtra > 0;
+    const hasRV     = (r.totalRation + r.totalVegetable) > 0;
+    const hasPaid   = r.shares.some(s => s.personalExpensePaid > 0);
+    const sumPaid   = r.shares.reduce((a, s) => a + s.personalExpensePaid, 0);
+    const netGrand  = r.shares.reduce((a, s) => a + s.total, 0);
+
+    const cols: { key: string; label: string; width: number; cell: (s: MemberShare) => string; total: string }[] = [];
+    if (daywise) cols.push({ key: 'days', label: 'Days', width: 52, cell: s => `${s.daysPresent}d`, total: '' });
+    cols.push({ key: 'rent', label: 'Rent', width: 74, cell: s => this.rupee(s.rentShare), total: this.rupee(r.totalRent) });
+    if (hasExtra) cols.push({ key: 'extra', label: 'Other', width: 74, cell: s => s.extraShare > 0 ? this.rupee(s.extraShare) : '—', total: this.rupee(r.totalExtra) });
+    if (hasRV)    cols.push({ key: 'rv', label: 'Ration+Veg', width: 100, cell: s => s.rationVegShare > 0 ? this.rupee(s.rationVegShare) : '—', total: this.rupee(r.totalRation + r.totalVegetable) });
+    if (hasPaid)  cols.push({ key: 'paid', label: 'Paid', width: 80, cell: s => s.personalExpensePaid > 0 ? '−' + this.rupee(s.personalExpensePaid) : '—', total: '−' + this.rupee(sumPaid) });
+    cols.push({ key: 'pay', label: 'Pay', width: 88, cell: s => this.rupee(s.total), total: this.rupee(netGrand) });
+    return cols;
+  }
+
+  private readonly PAD = 40;
+  private readonly MEMBER_W = 158;
+
+  private computeWidth(g: Group): number {
+    const cols = this.numericCols(g);
+    const w = this.PAD + this.MEMBER_W + cols.reduce((a, c) => a + c.width, 0) + this.PAD;
+    return Math.max(w, 680);
+  }
+
   private computeHeight(g: Group): number {
     const expenseRows = 1
       + (g.result.totalRation    > 0 ? 1 : 0)
       + (g.result.totalVegetable > 0 ? 1 : 0)
       + (g.expenses.extraItems?.filter(i => i.amount > 0).length ?? 0);
-    const rowH = 88;                   // name + breakdown line + status line
     return (
       120                              // header
       + 20                             // gap below header
@@ -78,8 +111,10 @@ export class ImageShareService {
       + 44                             // grand total row
       + 36                             // average line
       + 32                             // dashed divider + gap
-      + 28                             // "MEMBERS" label
-      + g.result.shares.length * rowH  // member rows
+      + 28                             // "MEMBER BREAKDOWN" label
+      + 30                             // table column header
+      + g.result.shares.length * 40    // member rows
+      + 44                             // TOTAL row
       + 40                             // verification row
       + 48                             // footer
     );
@@ -248,89 +283,89 @@ export class ImageShareService {
     w: number,
     startY: number,
   ): number {
-    const daywise = g.expenses.splitMode === 'daywise';
-    const rowH = 88;
+    const cols     = this.numericCols(g);
+    const shares   = g.result.shares;
+    const pad      = this.PAD;
+    const cellPad  = 6;
+    const memberRight = pad + this.MEMBER_W;
     let y = startY + 8;
 
+    // Right edge x for each numeric column (laid out left→right after member col)
+    const rightEdges: number[] = [];
+    let cx = memberRight;
+    for (const c of cols) { cx += c.width; rightEdges.push(cx - cellPad); }
+
     // Section label
-    ctx.font         = '600 11px Inter, system-ui, sans-serif';
-    ctx.fillStyle    = C.GRAY_400;
-    ctx.textAlign    = 'left';
+    ctx.font = '600 11px Inter, system-ui, sans-serif';
+    ctx.fillStyle = C.GRAY_400;
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
-    ctx.fillText('MEMBER BREAKDOWN', 40, y);
-    y += 28;
+    ctx.fillText('MEMBER BREAKDOWN', pad, y);
+    y += 24;
 
-    const shares = g.result.shares;
+    // Column header row
+    ctx.font = '600 10px Inter, system-ui, sans-serif';
+    ctx.fillStyle = C.GRAY_400;
+    ctx.textAlign = 'left';
+    ctx.fillText('MEMBER', pad, y + 14);
+    ctx.textAlign = 'right';
+    cols.forEach((c, i) => ctx.fillText(c.label.toUpperCase(), rightEdges[i], y + 14));
+    y += 24;
+    // header underline
+    ctx.strokeStyle = C.GRAY_200; ctx.lineWidth = 1; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w - pad, y); ctx.stroke();
+
+    const rowH = 40;
     for (let i = 0; i < shares.length; i++) {
-      const share  = shares[i];
-      const isDebt = share.total >= 0;
+      const s = shares[i];
+      const isDebt = s.total >= 0;
+      const midY = y + rowH / 2;
 
-      // Avatar circle
-      const avatarY = y + 20;
+      // Avatar + name
       ctx.beginPath();
-      ctx.arc(56, avatarY, 20, 0, Math.PI * 2);
-      ctx.fillStyle = C.BRAND_50;
-      ctx.fill();
-      ctx.font         = 'bold 13px Inter, system-ui, sans-serif';
-      ctx.fillStyle    = C.BRAND_600;
-      ctx.textAlign    = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(share.memberName.slice(0, 2).toUpperCase(), 56, avatarY);
+      ctx.arc(pad + 16, midY, 14, 0, Math.PI * 2);
+      ctx.fillStyle = C.BRAND_50; ctx.fill();
+      ctx.font = 'bold 11px Inter, system-ui, sans-serif';
+      ctx.fillStyle = C.BRAND_600;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(s.memberName.slice(0, 2).toUpperCase(), pad + 16, midY);
 
-      // Member name
-      ctx.font         = '600 15px Inter, system-ui, sans-serif';
-      ctx.fillStyle    = C.GRAY_900;
-      ctx.textAlign    = 'left';
-      ctx.textBaseline = 'alphabetic';
-      ctx.fillText(this.truncate(ctx, share.memberName, w - 40 - 90 - 130), 90, y + 14);
+      ctx.font = '600 13px Inter, system-ui, sans-serif';
+      ctx.fillStyle = C.GRAY_900;
+      ctx.textAlign = 'left';
+      ctx.fillText(this.truncate(ctx, s.memberName, this.MEMBER_W - 40), pad + 38, midY);
 
-      // Net pay amount (right side, aligned with name)
-      ctx.font         = 'bold 18px Inter, system-ui, sans-serif';
-      ctx.fillStyle    = isDebt ? C.BRAND_600 : C.SUCCESS;
-      ctx.textAlign    = 'right';
-      ctx.textBaseline = 'alphabetic';
-      ctx.fillText(this.rupee(share.total), w - 40, y + 16);
+      // Numeric cells (right-aligned). 'pay' column coloured by direction.
+      cols.forEach((c, idx) => {
+        const isPay = c.key === 'pay';
+        ctx.font = isPay ? 'bold 13px Inter, system-ui, sans-serif' : '12px Inter, system-ui, sans-serif';
+        ctx.fillStyle = isPay ? (isDebt ? C.BRAND_600 : C.SUCCESS) : C.GRAY_700;
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.fillText(c.cell(s), rightEdges[idx], midY);
+      });
 
-      // Breakdown line: how the net is composed (the "proof")
-      const parts: string[] = [];
-      if (share.rentShare       > 0) parts.push(`Rent ${this.rupee(share.rentShare)}`);
-      if (share.rationVegShare  > 0) parts.push(`Ration+Veg ${this.rupee(share.rationVegShare)}`);
-      if (share.extraShare      > 0) parts.push(`Extra ${this.rupee(share.extraShare)}`);
-      let breakdown = parts.join(' · ');
-      if (share.personalExpensePaid > 0) breakdown += `  −Paid ${this.rupee(share.personalExpensePaid)}`;
-      ctx.font         = '11px Inter, system-ui, sans-serif';
-      ctx.fillStyle    = C.GRAY_500;
-      ctx.textAlign    = 'left';
-      ctx.fillText(this.truncate(ctx, breakdown, w - 90 - 40), 90, y + 36);
-
-      // Status line (+ days for daywise)
-      let chipX = 90;
-      const chipY = y + 56;
-      ctx.font = '11px Inter, system-ui, sans-serif';
-      if (daywise) {
-        ctx.fillStyle = C.BRAND_500;
-        ctx.fillText(`${share.daysPresent}d present`, chipX, chipY);
-        chipX += ctx.measureText(`${share.daysPresent}d present`).width + 12;
-        ctx.fillStyle = C.GRAY_200;
-        ctx.fillText('·', chipX - 8, chipY);
-      }
-      ctx.fillStyle = isDebt ? C.GRAY_400 : C.SUCCESS;
-      ctx.fillText(isDebt ? 'Pays' : 'Gets back', chipX, chipY);
-
-      // Row separator
-      if (i < shares.length - 1) {
-        ctx.strokeStyle = C.GRAY_100;
-        ctx.lineWidth   = 1;
-        ctx.setLineDash([]);
-        ctx.beginPath();
-        ctx.moveTo(90, y + rowH);
-        ctx.lineTo(w - 40, y + rowH);
-        ctx.stroke();
-      }
-
+      // light row separator
+      ctx.strokeStyle = C.GRAY_100; ctx.lineWidth = 1; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(pad, y + rowH); ctx.lineTo(w - pad, y + rowH); ctx.stroke();
       y += rowH;
     }
-    return y;
+
+    // TOTAL row
+    ctx.strokeStyle = C.GRAY_400; ctx.lineWidth = 1.2; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w - pad, y); ctx.stroke();
+    const totMid = y + 22;
+    ctx.font = 'bold 12px Inter, system-ui, sans-serif';
+    ctx.fillStyle = C.GRAY_900;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('TOTAL', pad, totMid);
+    cols.forEach((c, idx) => {
+      if (!c.total) return;
+      ctx.font = c.key === 'pay' ? 'bold 13px Inter, system-ui, sans-serif' : 'bold 12px Inter, system-ui, sans-serif';
+      ctx.fillStyle = c.key === 'pay' ? C.BRAND_600 : C.GRAY_900;
+      ctx.textAlign = 'right';
+      ctx.fillText(c.total, rightEdges[idx], totMid);
+    });
+    return y + 44;
   }
 
   private drawVerification(
@@ -352,8 +387,8 @@ export class ImageShareService {
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
     const label = ok
-      ? `✓ Verification passed — total = ${this.rupee(g.result.grandTotal)}`
-      : `✗ Verification failed`;
+      ? `✓ Totals match — shares add up to ${this.rupee(g.result.grandTotal)}`
+      : `✗ Totals don't add up — check the amounts`;
     ctx.fillText(label, w / 2, y + 14);
   }
 
