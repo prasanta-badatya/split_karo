@@ -49,10 +49,15 @@ import { IconComponent } from '../../components/icon/icon.component';
         </div>
       </header>
 
+      <!-- Loading -->
+      <div *ngIf="isLoading()" class="flex flex-col items-center justify-center min-h-[60vh]">
+        <div class="w-10 h-10 border-4 border-brand-200 border-t-brand-500 rounded-full animate-spin"></div>
+      </div>
+
       <!-- Not Found -->
-      <div *ngIf="!group()" class="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+      <div *ngIf="!isLoading() && !group()" class="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
         <div class="text-4xl mb-4">🔍</div>
-        <h2 class="font-bold text-gray-700 text-lg">Group not found</h2>
+        <h2 class="font-bold text-gray-700 text-lg">Split not found</h2>
         <button (click)="goBack()" class="mt-5 text-brand-600 font-semibold text-sm hover:underline">← Go Back</button>
       </div>
 
@@ -63,7 +68,7 @@ import { IconComponent } from '../../components/icon/icon.component';
         <div *ngIf="isEditing()" class="mb-6 bg-white rounded-2xl border border-brand-200 shadow-sm overflow-hidden">
           <div class="px-5 py-4 border-b border-gray-100 bg-brand-50 flex items-center gap-2">
             <span class="text-base">✏️</span>
-            <h2 class="font-bold text-brand-800 text-sm">Edit Group</h2>
+            <h2 class="font-bold text-brand-800 text-sm">Edit Split</h2>
             <span class="text-xs text-brand-500 ml-1">Changes recalculate automatically on save</span>
           </div>
 
@@ -436,11 +441,13 @@ export class GroupDetailComponent implements OnInit {
   private ui           = inject(UiService);
 
   readonly fmt        = formatCurrency;
-  readonly group      = signal<Group | undefined>(undefined);
+  readonly groupId    = signal('');
+  // Reactive: reflects IndexedDB load + any service updates (handles hard refresh).
+  readonly group      = computed(() => this.groupService.getGroup(this.groupId()));
+  readonly isLoading  = this.groupService.isLoading;
   readonly isSharing  = signal(false);
   readonly isEditing  = signal(false);
   readonly isSaving   = signal(false);
-  private groupId     = '';
 
   // Edit state
   editRent      = 0;
@@ -451,8 +458,7 @@ export class GroupDetailComponent implements OnInit {
   readonly extraPresets = ['Electricity', 'WiFi', 'Gas', 'Water', 'Maid', 'Milk', 'Maintenance'];
 
   ngOnInit(): void {
-    this.groupId = this.route.snapshot.paramMap.get('id') ?? '';
-    this.group.set(this.groupService.getGroup(this.groupId));
+    this.groupId.set(this.route.snapshot.paramMap.get('id') ?? '');
   }
 
   startEdit(): void {
@@ -527,7 +533,6 @@ export class GroupDetailComponent implements OnInit {
     const result = calculateShares(expenses, members);
     const updated: Group = { ...g, expenses, members, result };
     await this.groupService.updateGroup(updated);
-    this.group.set(updated);
     this.isEditing.set(false);
     this.isSaving.set(false);
     this.ui.toast('Changes saved', '✅');
@@ -594,20 +599,22 @@ export class GroupDetailComponent implements OnInit {
   }
 
   async togglePaid(memberId: string): Promise<void> {
-    await this.groupService.toggleMemberPaid(this.groupId, memberId);
-    this.group.set(this.groupService.getGroup(this.groupId));
+    await this.groupService.toggleMemberPaid(this.groupId(), memberId);
   }
 
-  goBack(): void { this.router.navigate(['/groups']); }
+  goBack(): void {
+    const g = this.group();
+    if (g?.rosterId) this.router.navigate(['/group', g.rosterId]);
+    else this.router.navigate(['/groups']);
+  }
 
   async toggleArchive(): Promise<void> {
     const g = this.group();
     if (!g) return;
     const next = !g.archived;
     await this.groupService.setArchived(g.id, next);
-    this.group.set({ ...g, archived: next });
-    this.ui.toast(next ? 'Group archived' : 'Group unarchived', next ? '📦' : '↩️');
-    if (next) this.router.navigate(['/groups']);
+    this.ui.toast(next ? 'Split archived' : 'Split unarchived', next ? '📦' : '↩️');
+    if (next) this.goBack();
   }
 
   async shareImage(): Promise<void> {

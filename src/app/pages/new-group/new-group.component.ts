@@ -1,9 +1,10 @@
-import { Component, inject, computed, ViewChildren, QueryList, ElementRef } from '@angular/core';
+import { Component, inject, computed, signal, effect, ViewChildren, QueryList, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { GroupFormService } from '../../services/group-form.service';
 import { GroupService } from '../../services/group.service';
+import { RosterService } from '../../services/roster.service';
 import { UiService } from '../../services/ui.service';
 import { calculateShares } from '../../utils/calculator';
 import { nanoid, formatCurrency } from '../../utils/formatters';
@@ -25,19 +26,24 @@ import { IconComponent } from '../../components/icon/icon.component';
             <app-icon name="arrow-left" class="w-5 h-5"></app-icon>
           </button>
           <div class="flex-1 min-w-0">
-            <h1 class="text-sm font-bold text-gray-900">New Group</h1>
+            <h1 class="text-sm font-bold text-gray-900">New Split</h1>
             <p class="text-xs text-gray-400">Step {{ form().step }} of 4</p>
           </div>
           <!-- Mini step badge -->
-          <span class="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all"
+          <span *ngIf="ready()" class="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all"
             [ngClass]="currentStep().badgeClass">
             {{ currentStep().icon }} {{ currentStep().label }}
           </span>
         </div>
       </header>
 
+      <!-- Loading (waiting for roster from IndexedDB) -->
+      <div *ngIf="!ready()" class="flex-1 flex items-center justify-center">
+        <div class="w-10 h-10 border-4 border-brand-200 border-t-brand-500 rounded-full animate-spin"></div>
+      </div>
+
       <!-- ─── Step Indicator + Progress ─── -->
-      <div class="bg-white border-b border-gray-100 shadow-sm">
+      <div *ngIf="ready()" class="bg-white border-b border-gray-100 shadow-sm">
         <!-- Animated progress bar -->
         <div class="h-1 bg-gray-100">
           <div class="h-1 bg-brand-500 transition-all duration-500 ease-out rounded-r-full"
@@ -66,7 +72,7 @@ import { IconComponent } from '../../components/icon/icon.component';
       </div>
 
       <!-- ─── Step Context Banner ─── -->
-      <div class="border-b transition-colors duration-300" [ngClass]="currentStep().bannerBg">
+      <div *ngIf="ready()" class="border-b transition-colors duration-300" [ngClass]="currentStep().bannerBg">
         <div class="max-w-3xl mx-auto px-4 py-4 flex items-center gap-4 anim-fade-in">
           <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 shadow-sm"
             [ngClass]="currentStep().iconBg">
@@ -90,17 +96,17 @@ import { IconComponent } from '../../components/icon/icon.component';
       </div>
 
       <!-- ─── Page Content ─── -->
-      <div class="flex-1 overflow-y-auto">
+      <div *ngIf="ready()" class="flex-1 overflow-y-auto">
         <div class="max-w-3xl mx-auto px-4 py-6 pb-28">
 
           <!-- ══ STEP 1: Group Info ══ -->
           <ng-container *ngIf="form().step === 1">
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5 anim-fade-up">
 
-              <!-- Group Name -->
+              <!-- Split Name -->
               <div>
                 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                  Group Name <span class="text-rose-400">*</span>
+                  Split Name <span class="text-rose-400">*</span>
                 </label>
                 <input type="text" inputmode="text"
                   [ngModel]="form().groupName"
@@ -549,7 +555,7 @@ import { IconComponent } from '../../components/icon/icon.component';
       </div>
 
       <!-- ─── Bottom Action Bar ─── -->
-      <div class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-200 shadow-lg z-20">
+      <div *ngIf="ready()" class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-200 shadow-lg z-20">
         <!-- Step dots -->
         <div class="flex justify-center gap-1.5 pt-3">
           <div *ngFor="let s of steps"
@@ -568,7 +574,7 @@ import { IconComponent } from '../../components/icon/icon.component';
           </button>
           <button *ngIf="form().step === 4" (click)="saveGroup()"
             class="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold text-sm shadow-sm shadow-emerald-200 transition-all">
-            🎉 Create Group
+            🎉 Save Split
           </button>
         </div>
       </div>
@@ -578,21 +584,45 @@ import { IconComponent } from '../../components/icon/icon.component';
 })
 export class NewGroupComponent {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private formService = inject(GroupFormService);
   private groupService = inject(GroupService);
+  private rosterService = inject(RosterService);
   private ui = inject(UiService);
 
+  private rosterId = this.route.snapshot.queryParamMap.get('roster') ?? '';
+  private seeded = false;
+  readonly ready = signal(false);
+
   @ViewChildren('nameInput') nameInputs!: QueryList<ElementRef<HTMLInputElement>>;
+
+  constructor() {
+    // Seed once IndexedDB has loaded — handles hard refresh / direct link to
+    // /split/new?roster=x where the roster isn't in memory yet on first tick.
+    effect(() => {
+      if (this.seeded) return;
+      if (this.rosterService.isLoading()) return;   // wait for load
+      const roster = this.rosterId ? this.rosterService.getRoster(this.rosterId) : undefined;
+      this.seeded = true;
+      if (!roster) {
+        this.ui.toast('Pick a group first', '⚠️');
+        this.router.navigate(['/groups']);
+        return;
+      }
+      this.formService.seedFromRoster(roster.name, roster.members);
+      this.ready.set(true);
+    }, { allowSignalWrites: true });
+  }
 
   readonly form = this.formService.form;
   readonly fmt = formatCurrency;
 
   readonly steps = [
     {
-      n: 1, label: 'Group Info', icon: '🏷️',
+      n: 1, label: 'Split Info', icon: '🏷️',
       iconBg: 'bg-blue-100', bannerBg: 'bg-blue-50/40 border-blue-100/60',
       badgeClass: 'bg-blue-50 border-blue-100 text-blue-700',
-      desc: 'Name your group and set the billing period',
+      desc: 'Name this split and set the billing period',
     },
     {
       n: 2, label: 'Expenses', icon: '💰',
@@ -663,7 +693,7 @@ export class NewGroupComponent {
   }
 
   back(): void {
-    if (this.form().step === 1) this.router.navigate(['/groups']);
+    if (this.form().step === 1) this.router.navigate(['/group', this.rosterId]);
     else this.prevStep();
   }
 
@@ -675,7 +705,7 @@ export class NewGroupComponent {
   nextStep(): void {
     const f = this.form();
     if (f.step === 1) {
-      if (!f.groupName.trim()) { this.ui.toast('Please enter a Group Name', '⚠️'); return; }
+      if (!f.groupName.trim()) { this.ui.toast('Please enter a split name', '⚠️'); return; }
       if (!f.fromDate || !f.toDate) { this.ui.toast('Please select both From and To dates', '⚠️'); return; }
       if (f.toDate < f.fromDate) { this.ui.toast('End date must be after start date', '⚠️'); return; }
     }
@@ -690,9 +720,11 @@ export class NewGroupComponent {
   async saveGroup(): Promise<void> {
     const f = this.form();
     const result = calculateShares(f.expenses, f.members);
+    const id = nanoid();
     await this.groupService.addGroup({
-      id: nanoid(),
+      id,
       name: f.groupName,
+      rosterId: this.rosterId,
       cycleLabel: this.cycleLabel(),
       createdAt: new Date().toISOString(),
       expenses: f.expenses,
@@ -700,8 +732,8 @@ export class NewGroupComponent {
       result,
     });
     this.formService.reset();
-    this.ui.toast('Group created', '🎉');
-    this.router.navigate(['/groups']);
+    this.ui.toast('Split saved', '🎉');
+    this.router.navigate(['/split', id]);
   }
 
   patchGroupName(v: string): void {

@@ -27,6 +27,24 @@ export class GroupFormService {
     this.form.set({ ...defaultState, expenses: { ...defaultExpenses }, members: [] });
   }
 
+  // Seed a new split from a roster: members prefilled (fresh ids, days/paid reset),
+  // name = roster name. Amounts/dates start blank.
+  seedFromRoster(groupName: string, rosterMembers: Member[]): void {
+    this.form.set({
+      ...defaultState,
+      groupName,
+      expenses: { ...defaultExpenses, extraItems: [] },
+      members: rosterMembers.map(m => ({
+        id: nanoid(),
+        name: m.name,
+        upiId: m.upiId ?? '',
+        includeRationVeg: m.includeRationVeg,
+        daysPresent: 15,
+        personalExpensePaid: 0,
+      })),
+    });
+  }
+
   setStep(step: 1 | 2 | 3 | 4): void {
     this.form.update(f => ({ ...f, step }));
   }

@@ -47,6 +47,13 @@ export class GroupService {
     return this._groups().find(g => g.id === id);
   }
 
+  // All splits belonging to a roster, newest first.
+  groupsForRoster(rosterId: string): Group[] {
+    return this._groups()
+      .filter(g => g.rosterId === rosterId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
   async reload(): Promise<void> {
     this._groups.set(await this.storage.loadGroups());
   }

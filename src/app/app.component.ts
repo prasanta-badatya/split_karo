@@ -282,7 +282,7 @@ export class AppComponent implements OnInit {
 
     if (path === '/' || path === '') this.activeTab = 'home';
     else if (path === '/settings') this.activeTab = 'settings';
-    else if (path.startsWith('/group') || path.startsWith('/new')) this.activeTab = 'groups';
+    else if (path.startsWith('/group') || path.startsWith('/new') || path.startsWith('/split')) this.activeTab = 'groups';
     else if (path.startsWith('/trip')) this.activeTab = 'trips';
     else this.activeTab = '';
   }

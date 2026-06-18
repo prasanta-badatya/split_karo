@@ -46,9 +46,22 @@ export interface CalculationResult {
   calculatedAt: string;
 }
 
-export interface Group {
+// A Roster is the persistent "group" of people. Members are entered once and
+// reused across many splits (cycles).
+export interface Roster {
   id: string;
   name: string;
+  members: Member[];   // daysPresent/personalExpensePaid unused here (roster = identity only)
+  createdAt: string;
+  archived?: boolean;
+}
+
+// A Group is ONE split/cycle belonging to a roster. (Kept name "Group" to avoid
+// a mass rename — conceptually this is a "Split".)
+export interface Group {
+  id: string;
+  name: string;          // snapshot of roster name at split time
+  rosterId: string;      // owning roster
   cycleLabel: string;
   createdAt: string;
   expenses: ExpenseConfig;
