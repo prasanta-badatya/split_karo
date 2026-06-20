@@ -17,7 +17,10 @@ import { ThemeToggleComponent } from '../../components/theme-toggle/theme-toggle
       <header class="bg-white border-b border-gray-100 sticky top-0 z-30">
         <div class="max-w-6xl mx-auto px-4 sm:px-8 h-14 flex items-center gap-3">
           <div class="w-8 h-8 bg-brand-500 rounded-xl flex items-center justify-center shadow-sm">
-            <span class="text-white font-bold text-xs tracking-tight">SK</span>
+            <svg viewBox="0 0 32 32" fill="none" class="w-5 h-5">
+              <circle cx="16" cy="16" r="11" fill="#ffffff"/>
+              <path d="M17.3 7 L13.4 16 L16.6 16 L14.7 25 L19.8 14.7 L16.6 14.7 Z" fill="#4338ca"/>
+            </svg>
           </div>
           <span class="text-base font-bold text-gray-900">Split Karo</span>
           <span class="ml-auto hidden sm:inline text-xs text-gray-400 font-medium mr-3">Free · No signup · Offline</span>

@@ -154,16 +154,22 @@ export class ImageShareService {
     this.roundRect(ctx, 0, 0, w, 120, { tl: 20, tr: 20, bl: 0, br: 0 });
     ctx.fill();
 
-    // "SK" pill (left)
-    ctx.fillStyle = 'rgba(255,255,255,0.18)';
-    this.roundRect(ctx, 32, 26, 40, 40, 12);
+    // Split Coin mark (left): white coin cleft by a lightning bolt
+    ctx.fillStyle = C.WHITE;
+    ctx.beginPath();
+    ctx.arc(52, 46, 16, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.font         = 'bold 15px Inter, system-ui, sans-serif';
-    ctx.fillStyle    = C.WHITE;
-    ctx.textAlign    = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('SK', 52, 46);
+    ctx.fillStyle = C.BRAND_600;
+    ctx.beginPath();
+    ctx.moveTo(54, 32.5);
+    ctx.lineTo(48.1, 46);
+    ctx.lineTo(52.9, 46);
+    ctx.lineTo(50, 59.5);
+    ctx.lineTo(57.7, 44);
+    ctx.lineTo(52.9, 44);
+    ctx.closePath();
+    ctx.fill();
 
     // "Split Karo" wordmark
     ctx.textAlign    = 'left';

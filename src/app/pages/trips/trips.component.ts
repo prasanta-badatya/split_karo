@@ -19,7 +19,10 @@ import { Trip } from '../../models/trip.model';
         <div class="max-w-6xl mx-auto px-4 sm:px-8 h-14 flex items-center justify-between">
           <div class="flex items-center gap-2.5">
             <div class="w-8 h-8 bg-brand-500 rounded-xl flex items-center justify-center shadow-sm">
-              <span class="text-white font-bold text-xs">SK</span>
+              <svg viewBox="0 0 32 32" fill="none" class="w-5 h-5">
+                <circle cx="16" cy="16" r="11" fill="#ffffff"/>
+                <path d="M17.3 7 L13.4 16 L16.6 16 L14.7 25 L19.8 14.7 L16.6 14.7 Z" fill="#4338ca"/>
+              </svg>
             </div>
             <span class="text-base font-bold text-gray-900">Trips</span>
           </div>
