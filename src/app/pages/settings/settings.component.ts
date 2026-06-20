@@ -142,7 +142,10 @@ interface BackupFile {
           <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 px-1">About</h2>
           <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center">
             <div class="w-12 h-12 bg-brand-500 rounded-2xl flex items-center justify-center shadow-sm mx-auto mb-3">
-              <span class="text-white font-bold tracking-tight">SK</span>
+              <svg viewBox="0 0 32 32" fill="none" class="w-7 h-7">
+                <circle cx="16" cy="16" r="11" fill="#ffffff"/>
+                <path d="M17.3 7 L13.4 16 L16.6 16 L14.7 25 L19.8 14.7 L16.6 14.7 Z" fill="#4338ca"/>
+              </svg>
             </div>
             <p class="font-bold text-gray-900">Split Karo</p>
             <p class="text-xs text-gray-400 mt-1">Smart expense splitter · Free · Offline</p>
