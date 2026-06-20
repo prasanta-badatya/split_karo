@@ -21,7 +21,8 @@ export interface Settlement {
   to: string;
   toName: string;
   amount: number;
-  paid: boolean;
+  paid: boolean;          // legacy binary flag (kept for back-compat)
+  paidAmount?: number;    // amount received so far against this transfer (partial payments)
 }
 
 export interface Trip {

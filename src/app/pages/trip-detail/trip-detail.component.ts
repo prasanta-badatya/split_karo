@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TripService } from '../../services/trip.service';
 import { UiService } from '../../services/ui.service';
-import { Trip, TripExpense, TripMember } from '../../models/trip.model';
+import { Trip, TripExpense, TripMember, Settlement } from '../../models/trip.model';
 import { buildUpiUri, buildUpiPayLink, UpiRequest } from '../../utils/upi';
 import { shareFor } from '../../utils/trip-calculator';
 import { IconComponent } from '../../components/icon/icon.component';
@@ -110,37 +110,47 @@ interface ExpenseEdit {
           <div class="space-y-2">
             <div *ngFor="let s of t.settlements; let i = index"
               class="bg-white rounded-xl border shadow-sm px-4 py-3 transition-colors"
-              [ngClass]="s.paid ? 'border-emerald-100 bg-emerald-50' : 'border-gray-100'">
+              [ngClass]="isSettled(s) ? 'border-emerald-100 bg-emerald-50' : isPartial(s) ? 'border-amber-100 bg-amber-50/40' : 'border-gray-100'">
 
               <div class="flex items-center gap-3">
                 <!-- From avatar -->
                 <div class="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0"
-                  [ngClass]="s.paid ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-50 text-rose-500'">
+                  [ngClass]="isSettled(s) ? 'bg-emerald-100 text-emerald-700' : isPartial(s) ? 'bg-amber-100 text-amber-700' : 'bg-rose-50 text-rose-500'">
                   {{ s.fromName.slice(0,2).toUpperCase() }}
                 </div>
 
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-semibold text-gray-900">
-                    <span [ngClass]="s.paid ? 'text-emerald-700' : 'text-rose-500'">{{ s.fromName }}</span>
+                    <span [ngClass]="isSettled(s) ? 'text-emerald-700' : isPartial(s) ? 'text-amber-700' : 'text-rose-500'">{{ s.fromName }}</span>
                     <span class="text-gray-400 font-normal mx-1">pays</span>
                     <span class="text-brand-600">{{ s.toName }}</span>
                   </p>
-                  <p class="text-base font-bold mt-0.5" [ngClass]="s.paid ? 'text-emerald-600' : 'text-gray-900'">
+                  <p class="text-base font-bold mt-0.5" [ngClass]="isSettled(s) ? 'text-emerald-600' : 'text-gray-900'">
                     ₹{{ s.amount | number:'1.0-2' }}
+                    <span *ngIf="isPartial(s)" class="text-xs font-semibold text-amber-600 ml-1">· ₹{{ settleRemaining(s) | number:'1.0-2' }} left</span>
                   </p>
                 </div>
 
-                <button (click)="togglePaid(i)"
-                  class="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors border"
-                  [ngClass]="s.paid
-                    ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-white'
-                    : 'bg-brand-50 text-brand-600 border-brand-200 hover:bg-brand-500 hover:text-white hover:border-brand-500'">
-                  {{ s.paid ? '✓ Paid' : 'Mark Paid' }}
-                </button>
+                <div class="flex-shrink-0 flex flex-col items-end gap-1">
+                  <button (click)="quickToggleSettle(i, s)"
+                    class="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors border whitespace-nowrap"
+                    [ngClass]="isSettled(s)
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-white'
+                      : isPartial(s)
+                        ? 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200'
+                        : 'bg-brand-50 text-brand-600 border-brand-200 hover:bg-brand-500 hover:text-white hover:border-brand-500'">
+                    {{ isSettled(s) ? '✓ Paid' : 'Mark Paid' }}
+                  </button>
+                  <button *ngIf="!isSettled(s)" (click)="openSettle(i, s)"
+                    title="Record a partial amount"
+                    class="text-[11px] font-medium text-gray-400 hover:text-brand-600 underline underline-offset-2">
+                    Partial
+                  </button>
+                </div>
               </div>
 
               <!-- Pay via UPI / Remind row (unsettled only) -->
-              <div *ngIf="!s.paid" class="flex items-center gap-2 mt-2.5">
+              <div *ngIf="!isSettled(s)" class="flex items-center gap-2 mt-2.5">
                 <a *ngIf="payeeUpi(s.to)" [href]="upiLink(s)"
                   class="flex-1 text-center text-xs font-bold px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white transition-colors">
                   💸 Pay {{ s.toName }} via UPI
@@ -367,6 +377,37 @@ interface ExpenseEdit {
 
       <!-- ═══ PAY QR SHEET ═══ -->
       <app-pay-qr *ngIf="payReq() as r" [req]="r" (closed)="payReq.set(null)"></app-pay-qr>
+
+      <!-- ═══ RECORD PAYMENT SHEET ═══ -->
+      <div *ngIf="settleEdit() as e" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" (click)="closeSettle()"></div>
+        <div class="relative bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl"
+          style="animation: sheetUp 0.28s cubic-bezier(.32,.72,0,1)">
+          <h3 class="text-lg font-bold text-gray-900 text-center">Record payment</h3>
+          <p class="text-sm text-gray-500 text-center mt-1">
+            {{ e.s.fromName }} → {{ e.s.toName }} ·
+            <span class="font-semibold text-brand-600">₹{{ e.s.amount | number:'1.0-2' }}</span>
+          </p>
+          <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mt-5 mb-1.5">Amount paid so far (₹)</label>
+          <div class="flex items-center border-2 border-gray-200 rounded-2xl overflow-hidden focus-within:border-brand-400 transition-colors">
+            <span class="px-4 py-3 bg-gray-50 border-r border-gray-200 text-gray-400 font-bold">₹</span>
+            <input type="number" inputmode="decimal" [(ngModel)]="settleValue" placeholder="0"
+              class="flex-1 px-3 py-3 text-lg font-bold text-gray-900 focus:outline-none min-w-0" />
+          </div>
+          <p class="text-xs text-gray-400 mt-1.5">Enter the running total paid. Leave 0 to mark unpaid.</p>
+          <div class="flex gap-2 mt-5">
+            <button (click)="markSettleFull()"
+              class="flex-1 py-3 rounded-xl border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-semibold text-sm transition-colors">
+              Paid in full
+            </button>
+            <button (click)="saveSettle()"
+              class="flex-1 py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm transition-colors">
+              Save
+            </button>
+          </div>
+          <button (click)="closeSettle()" class="mt-3 w-full text-gray-400 text-sm py-1.5">Cancel</button>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -385,7 +426,7 @@ export class TripDetailComponent {
   });
 
   readonly settledCount = computed(() =>
-    (this.trip()?.settlements ?? []).filter(s => s.paid).length,
+    (this.trip()?.settlements ?? []).filter(s => this.isSettled(s)).length,
   );
 
   readonly grandTotal = computed(() =>
@@ -613,10 +654,53 @@ export class TripDetailComponent {
     this.ui.toast('Expense deleted', '🗑️');
   }
 
-  async togglePaid(index: number): Promise<void> {
+  // ─── Partial settlement tracking ──────────────────────────────────
+  settlePaid(s: Settlement): number { return TripService.settlementPaid(s); }
+  settleRemaining(s: Settlement): number { return Math.round((s.amount - this.settlePaid(s)) * 100) / 100; }
+  isSettled(s: Settlement): boolean { return this.settlePaid(s) >= s.amount - 0.01; }
+  isPartial(s: Settlement): boolean { const p = this.settlePaid(s); return p > 0.01 && !this.isSettled(s); }
+
+  settleLabel(s: Settlement): string {
+    if (this.isSettled(s)) return '✓ Paid';
+    if (this.isPartial(s)) return '₹' + this.fmtNum(this.settlePaid(s)) + ' / ' + this.fmtNum(s.amount);
+    return 'Record';
+  }
+
+  private fmtNum(n: number): string { return (Math.round(n * 100) / 100).toLocaleString('en-IN'); }
+
+  // Record-payment sheet
+  readonly settleEdit = signal<{ index: number; s: Settlement } | null>(null);
+  settleValue = '';
+
+  openSettle(index: number, s: Settlement): void {
+    const paid = this.settlePaid(s);
+    this.settleValue = paid > 0 ? String(paid) : '';
+    this.settleEdit.set({ index, s });
+  }
+
+  closeSettle(): void { this.settleEdit.set(null); }
+
+  /** One-tap: fully settle if not already, otherwise clear back to unpaid. */
+  async quickToggleSettle(index: number, s: Settlement): Promise<void> {
     const t = this.trip();
     if (!t) return;
-    await this.tripService.toggleSettlementPaid(t.id, index);
+    await this.tripService.setSettlementPaidAmount(t.id, index, this.isSettled(s) ? 0 : s.amount);
+  }
+
+  async saveSettle(): Promise<void> {
+    const e = this.settleEdit();
+    const t = this.trip();
+    if (!e || !t) return;
+    await this.tripService.setSettlementPaidAmount(t.id, e.index, +this.settleValue || 0);
+    this.settleEdit.set(null);
+  }
+
+  async markSettleFull(): Promise<void> {
+    const e = this.settleEdit();
+    const t = this.trip();
+    if (!e || !t) return;
+    await this.tripService.setSettlementPaidAmount(t.id, e.index, e.s.amount);
+    this.settleEdit.set(null);
   }
 
   async toggleArchive(): Promise<void> {

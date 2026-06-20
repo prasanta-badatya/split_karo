@@ -62,4 +62,24 @@ export class TripService {
     await this.storage.saveTrip(updated);
     this._trips.update(ts => ts.map(t => t.id === tripId ? updated : t));
   }
+
+  /** Amount received so far against a settlement, honouring the legacy boolean. */
+  static settlementPaid(s: Settlement): number {
+    if (s.paidAmount != null) return s.paidAmount;
+    return s.paid ? s.amount : 0;
+  }
+
+  /** Record the cumulative amount paid against one settlement transfer. */
+  async setSettlementPaidAmount(tripId: string, index: number, amount: number): Promise<void> {
+    const trip = this._trips().find(t => t.id === tripId);
+    if (!trip) return;
+    const settlements: Settlement[] = trip.settlements.map((s, i) => {
+      if (i !== index) return s;
+      const paidAmount = Math.max(0, Math.round(amount * 100) / 100);
+      return { ...s, paidAmount, paid: paidAmount >= s.amount - 0.01 };
+    });
+    const updated: Trip = { ...trip, settlements };
+    await this.storage.saveTrip(updated);
+    this._trips.update(ts => ts.map(t => t.id === tripId ? updated : t));
+  }
 }

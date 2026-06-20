@@ -34,6 +34,7 @@ export function calculateShares(expenses: ExpenseConfig, members: Member[]): Cal
   const shares: MemberShare[] = members.map(m => {
     const rv = rationVegMap[m.id] ?? 0;
     const gross = rentShare + extraShare + rv;
+    const previousDue = Number(m.previousDue) || 0;  // carried in from last cycle; 0 for old/standalone splits
     return {
       memberId: m.id,
       memberName: m.name,
@@ -42,8 +43,11 @@ export function calculateShares(expenses: ExpenseConfig, members: Member[]): Cal
       extraShare,
       rationVegShare: rv,
       personalExpensePaid: m.personalExpensePaid,
+      previousDue,
       grossTotal: gross,
-      total: gross - m.personalExpensePaid,
+      // previousDue rides on top of this cycle's net; it's NOT part of grandTotal
+      // (this cycle's expenses), so verification below stays based on grossTotal.
+      total: gross - m.personalExpensePaid + previousDue,
     };
   });
 

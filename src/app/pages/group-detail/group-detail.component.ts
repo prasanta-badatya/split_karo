@@ -312,7 +312,7 @@ import { PayQrComponent } from '../../components/pay-qr/pay-qr.component';
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let share of g.result.shares"
+                <tr *ngFor="let share of g.result.shares; trackBy: trackShare"
                   class="border-b border-gray-50 last:border-b-0 hover:bg-gray-50 transition-colors">
                   <td class="py-4 px-5">
                     <div class="flex items-center gap-3">
@@ -338,12 +338,19 @@ import { PayQrComponent } from '../../components/pay-qr/pay-qr.component';
                   <td class="py-4 px-4 text-center">
                     <div class="flex items-center justify-center gap-1.5">
                       <button *ngIf="share.total > 0"
-                        (click)="togglePaid(share.memberId)"
+                        (click)="quickToggle(share)"
                         [ngClass]="isPaid(share.memberId)
                           ? 'bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200'
-                          : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'"
+                          : isPartial(share.memberId)
+                            ? 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200'
+                            : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'"
                         class="text-xs font-semibold px-2.5 py-1 rounded-full border transition-colors whitespace-nowrap">
                         {{ isPaid(share.memberId) ? '✓ Paid' : 'Mark Paid' }}
+                      </button>
+                      <button *ngIf="share.total > 0 && !isPaid(share.memberId)" (click)="openPay(share)"
+                        title="Record a partial amount"
+                        class="text-[11px] font-medium text-gray-400 hover:text-brand-600 underline underline-offset-2 whitespace-nowrap">
+                        Partial
                       </button>
                       <a *ngIf="canMemberPayQr(share)" [href]="memberPayHref(share)" title="Pay now via UPI"
                         class="w-7 h-7 flex items-center justify-center rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50 transition-colors flex-shrink-0">
@@ -371,6 +378,9 @@ import { PayQrComponent } from '../../components/pay-qr/pay-qr.component';
                       <span class="text-xs mt-0.5" [ngClass]="share.total < 0 ? 'text-emerald-400' : 'text-gray-400'">
                         {{ share.total < 0 ? 'Gets back' : 'Pays' }}
                       </span>
+                      <span *ngIf="isPartial(share.memberId)" class="text-[11px] font-semibold text-amber-600 mt-0.5">
+                        {{ fmt(remaining(share)) }} left
+                      </span>
                     </div>
                   </td>
                 </tr>
@@ -380,7 +390,7 @@ import { PayQrComponent } from '../../components/pay-qr/pay-qr.component';
 
           <!-- Mobile Cards -->
           <div class="md:hidden divide-y divide-gray-50">
-            <div *ngFor="let share of g.result.shares" class="p-4">
+            <div *ngFor="let share of g.result.shares; trackBy: trackShare" class="p-4">
               <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-3">
                   <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold flex-shrink-0"
@@ -402,12 +412,22 @@ import { PayQrComponent } from '../../components/pay-qr/pay-qr.component';
                   <p class="text-xs" [ngClass]="share.total < 0 ? 'text-emerald-400' : 'text-gray-400'">
                     {{ share.total < 0 ? 'Gets back' : 'Pays' }}
                   </p>
+                  <p *ngIf="isPartial(share.memberId)" class="text-[11px] font-semibold text-amber-600">
+                    {{ fmt(remaining(share)) }} left
+                  </p>
                   <div class="flex items-center gap-1.5">
+                    <button *ngIf="share.total > 0 && !isPaid(share.memberId)" (click)="openPay(share)"
+                      title="Record a partial amount"
+                      class="text-[11px] font-medium text-gray-400 hover:text-brand-600 underline underline-offset-2">
+                      Partial
+                    </button>
                     <button *ngIf="share.total > 0"
-                      (click)="togglePaid(share.memberId)"
+                      (click)="quickToggle(share)"
                       [ngClass]="isPaid(share.memberId)
                         ? 'bg-emerald-100 text-emerald-700 border-emerald-300'
-                        : 'bg-gray-100 text-gray-500 border-gray-200'"
+                        : isPartial(share.memberId)
+                          ? 'bg-amber-100 text-amber-700 border-amber-300'
+                          : 'bg-gray-100 text-gray-500 border-gray-200'"
                       class="text-xs font-semibold px-2 py-0.5 rounded-full border transition-colors">
                       {{ isPaid(share.memberId) ? '✓ Paid' : 'Mark Paid' }}
                     </button>
@@ -456,6 +476,41 @@ import { PayQrComponent } from '../../components/pay-qr/pay-qr.component';
 
       <!-- ═══ PAY QR SHEET ═══ -->
       <app-pay-qr *ngIf="payReq() as r" [req]="r" (closed)="payReq.set(null)"></app-pay-qr>
+
+      <!-- ═══ RECORD PAYMENT SHEET ═══ -->
+      <div *ngIf="payEdit() as p" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" (click)="closePay()"></div>
+        <div class="relative bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl"
+          style="animation: sheetUp 0.28s cubic-bezier(.32,.72,0,1)">
+          <h3 class="text-lg font-bold text-gray-900 text-center">Record payment</h3>
+          <p class="text-sm text-gray-500 text-center mt-1">
+            {{ p.name }} owes <span class="font-semibold text-brand-600">{{ fmt(p.owed) }}</span> this cycle
+          </p>
+          <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wide mt-5 mb-1.5">Amount received so far (₹)</label>
+          <div class="flex items-center border-2 border-gray-200 rounded-2xl overflow-hidden focus-within:border-brand-400 transition-colors">
+            <span class="px-4 py-3 bg-gray-50 border-r border-gray-200 text-gray-400 font-bold">₹</span>
+            <input type="number" inputmode="decimal" [(ngModel)]="payValue" placeholder="0"
+              class="flex-1 px-3 py-3 text-lg font-bold text-gray-900 focus:outline-none min-w-0" />
+          </div>
+          <p class="text-xs text-gray-400 mt-1.5">
+            Enter the running total they've paid. Leave 0 to mark unpaid.
+            <span *ngIf="(+payValue || 0) > p.owed + 0.01" class="text-emerald-600 font-semibold block mt-0.5">
+              ₹{{ ((+payValue || 0) - p.owed) | number:'1.0-2' }} extra / advance
+            </span>
+          </p>
+          <div class="flex gap-2 mt-5">
+            <button (click)="markPayFull()"
+              class="flex-1 py-3 rounded-xl border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-semibold text-sm transition-colors">
+              Settled in full
+            </button>
+            <button (click)="savePay()"
+              class="flex-1 py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm transition-colors">
+              Save
+            </button>
+          </div>
+          <button (click)="closePay()" class="mt-3 w-full text-gray-400 text-sm py-1.5">Cancel</button>
+        </div>
+      </div>
     </div>
   `,
 })
@@ -636,13 +691,75 @@ export class GroupDetailComponent implements OnInit {
     return g.members.length > 0 ? g.result.grandTotal / g.members.length : 0;
   }
 
-  isPaid(memberId: string): boolean {
-    return !!(this.group()?.paidMembers?.[memberId]);
+  // ─── Partial payment tracking ─────────────────────────────────────
+  /** Amount received so far for a member (honours legacy boolean). */
+  amountPaid(memberId: string): number {
+    const g = this.group();
+    if (!g) return 0;
+    const owed = g.result.shares.find(s => s.memberId === memberId)?.total ?? 0;
+    return GroupService.amountPaidFor(g, memberId, owed);
   }
 
-  async togglePaid(memberId: string): Promise<void> {
-    await this.groupService.toggleMemberPaid(this.groupId(), memberId);
+  remaining(share: MemberShare): number {
+    return Math.round((share.total - this.amountPaid(share.memberId)) * 100) / 100;
   }
+
+  isPaid(memberId: string): boolean {
+    const g = this.group();
+    const owed = g?.result.shares.find(s => s.memberId === memberId)?.total ?? 0;
+    if (owed <= 0.01) return false;
+    return this.amountPaid(memberId) >= owed - 0.01;
+  }
+
+  isPartial(memberId: string): boolean {
+    const paid = this.amountPaid(memberId);
+    return paid > 0.01 && !this.isPaid(memberId);
+  }
+
+  /** Short label for the status pill. */
+  payLabel(share: MemberShare): string {
+    if (this.isPaid(share.memberId)) return '✓ Paid';
+    if (this.isPartial(share.memberId)) return '₹' + this.fmtNum(this.amountPaid(share.memberId)) + ' / ' + this.fmtNum(share.total);
+    return 'Record';
+  }
+
+  private fmtNum(n: number): string {
+    return (Math.round(n * 100) / 100).toLocaleString('en-IN');
+  }
+
+  // ─── Record-payment sheet ─────────────────────────────────────────
+  readonly payEdit = signal<{ memberId: string; name: string; owed: number } | null>(null);
+  payValue = '';
+
+  openPay(share: MemberShare): void {
+    const paid = this.amountPaid(share.memberId);
+    this.payValue = paid > 0 ? String(paid) : '';
+    this.payEdit.set({ memberId: share.memberId, name: share.memberName, owed: share.total });
+  }
+
+  closePay(): void { this.payEdit.set(null); }
+
+  /** One-tap: fully settle if not already paid, otherwise clear back to unpaid. */
+  async quickToggle(share: MemberShare): Promise<void> {
+    const amount = this.isPaid(share.memberId) ? 0 : share.total;
+    await this.groupService.setMemberPaidAmount(this.groupId(), share.memberId, amount);
+  }
+
+  async savePay(): Promise<void> {
+    const e = this.payEdit();
+    if (!e) return;
+    await this.groupService.setMemberPaidAmount(this.groupId(), e.memberId, +this.payValue || 0);
+    this.payEdit.set(null);
+  }
+
+  async markPayFull(): Promise<void> {
+    const e = this.payEdit();
+    if (!e) return;
+    await this.groupService.setMemberPaidAmount(this.groupId(), e.memberId, e.owed);
+    this.payEdit.set(null);
+  }
+
+  trackShare(_: number, s: MemberShare): string { return s.memberId; }
 
   // ─── Collector (UPI QR target for home/ration splits) ─────────────
   collectorMembers(): Member[] {

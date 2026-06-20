@@ -28,19 +28,22 @@ export class GroupFormService {
   }
 
   // Seed a new split from a roster: members prefilled (fresh ids, days/paid reset),
-  // name = roster name. Amounts/dates start blank.
-  seedFromRoster(groupName: string, rosterMembers: Member[]): void {
+  // name = roster name. Amounts/dates start blank. `carryByName` pre-fills each
+  // member's previous-cycle unpaid dues (keyed by lowercased name).
+  seedFromRoster(groupName: string, rosterMembers: Member[], carryByName: Record<string, number> = {}): void {
     this.form.set({
       ...defaultState,
       groupName,
       expenses: { ...defaultExpenses, extraItems: [] },
       members: rosterMembers.map(m => ({
         id: nanoid(),
+        rosterMemberId: m.id,
         name: m.name,
         upiId: m.upiId ?? '',
         includeRationVeg: m.includeRationVeg,
         daysPresent: 15,
         personalExpensePaid: 0,
+        previousDue: carryByName[m.name.trim().toLowerCase()] ?? 0,
       })),
     });
   }

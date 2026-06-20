@@ -21,6 +21,8 @@ export interface Member {
   includeRationVeg: boolean;
   personalExpensePaid: number;
   upiId?: string;
+  rosterMemberId?: string;  // stable identity across cycles (member ids are re-generated per split)
+  previousDue?: number;     // unpaid balance carried in from the previous cycle (default 0)
 }
 
 export interface MemberShare {
@@ -31,6 +33,7 @@ export interface MemberShare {
   extraShare: number;
   rationVegShare: number;
   personalExpensePaid: number;
+  previousDue: number;   // carried-in dues added on top of this cycle's share
   grossTotal: number;
   total: number;
 }
@@ -69,7 +72,8 @@ export interface Group {
   expenses: ExpenseConfig;
   members: Member[];
   result: CalculationResult;
-  paidMembers?: Record<string, boolean>;
+  paidMembers?: Record<string, boolean>;     // legacy binary paid flag (kept for back-compat)
+  paidAmounts?: Record<string, number>;      // memberId → amount received so far (partial payments)
   collectorId?: string;  // member who collects everyone's share (UPI QR target)
   archived?: boolean;
 }

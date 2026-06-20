@@ -384,6 +384,20 @@ import { IconComponent } from '../../components/icon/icon.component';
                   </div>
                 </div>
 
+                <!-- Row 2b: Previous dues carried from last cycle (auto-filled, editable) -->
+                <div *ngIf="anyPreviousDue()" class="mb-3">
+                  <label class="block text-xs font-semibold text-amber-500 uppercase tracking-wide mb-1.5">↩️ Previous Dues (₹)</label>
+                  <div class="flex items-center border border-amber-200 bg-amber-50/50 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-amber-300 transition-all">
+                    <span class="px-2.5 py-2.5 bg-amber-100/60 border-r border-amber-200 text-amber-500 text-xs">₹</span>
+                    <input type="number" inputmode="decimal"
+                      [ngModel]="member.previousDue"
+                      (ngModelChange)="updateMember(member.id, 'previousDue', +$event)"
+                      placeholder="0"
+                      class="flex-1 px-2.5 py-2.5 text-sm bg-transparent focus:outline-none min-w-0" />
+                  </div>
+                  <p class="text-[11px] text-amber-600 mt-1">Carried from last cycle's unpaid balance — edit if needed.</p>
+                </div>
+
                 <!-- Row 3: Include in Ration+Veggie pool -->
                 <div *ngIf="hasRationOrVeg()" class="mb-3">
                   <label class="flex items-center gap-2 cursor-pointer select-none">
@@ -508,6 +522,7 @@ import { IconComponent } from '../../components/icon/icon.component';
                       <th *ngIf="result().totalExtra > 0" class="py-3 px-4 text-right text-xs font-semibold text-gray-500">🧾 Other</th>
                       <th *ngIf="hasRationOrVeg()" class="py-3 px-4 text-right text-xs font-semibold text-gray-500">🛒🥦 Ration+Veg</th>
                       <th *ngIf="hasAnyPersonalPaid()" class="py-3 px-4 text-right text-xs font-semibold text-gray-500">✅ Paid</th>
+                      <th *ngIf="anyPreviousDue()" class="py-3 px-4 text-right text-xs font-semibold text-amber-600">↩️ Old Dues</th>
                       <th class="py-3 px-5 text-right text-xs font-semibold text-gray-700">Pay Amount</th>
                     </tr>
                   </thead>
@@ -533,6 +548,9 @@ import { IconComponent } from '../../components/icon/icon.component';
                       </td>
                       <td *ngIf="hasAnyPersonalPaid()" class="py-3.5 px-4 text-right text-xs font-medium text-emerald-600">
                         {{ share.personalExpensePaid > 0 ? '−' + fmt(share.personalExpensePaid) : '—' }}
+                      </td>
+                      <td *ngIf="anyPreviousDue()" class="py-3.5 px-4 text-right text-xs font-medium text-amber-600">
+                        {{ share.previousDue > 0 ? '+' + fmt(share.previousDue) : '—' }}
                       </td>
                       <td class="py-3.5 px-5 text-right">
                         <div class="flex flex-col items-end">
@@ -609,7 +627,8 @@ export class NewGroupComponent {
         this.router.navigate(['/groups']);
         return;
       }
-      this.formService.seedFromRoster(roster.name, roster.members);
+      const carry = this.groupService.previousDuesForRoster(roster.id);
+      this.formService.seedFromRoster(roster.name, roster.members, carry);
       this.ready.set(true);
     }, { allowSignalWrites: true });
   }
@@ -783,6 +802,10 @@ export class NewGroupComponent {
       const inputs = this.nameInputs.toArray();
       if (inputs.length) inputs[inputs.length - 1].nativeElement.focus();
     }, 50);
+  }
+
+  anyPreviousDue(): boolean {
+    return this.form().members.some(m => (Number(m.previousDue) || 0) > 0.01);
   }
 
   updateMember(id: string, key: keyof Member, value: any): void {

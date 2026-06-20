@@ -80,4 +80,44 @@ export class GroupService {
     await this.storage.saveGroup(updated);
     this._groups.update(gs => gs.map(g => g.id === groupId ? updated : g));
   }
+
+  /** Amount received so far for a member, honouring the legacy boolean flag. */
+  static amountPaidFor(group: Group, memberId: string, owed: number): number {
+    const explicit = group.paidAmounts?.[memberId];
+    if (explicit != null) return explicit;
+    return group.paidMembers?.[memberId] && owed > 0 ? owed : 0; // old "fully paid"
+  }
+
+  /** Record the cumulative amount a member has paid this cycle (0 clears it). */
+  async setMemberPaidAmount(groupId: string, memberId: string, amount: number): Promise<void> {
+    const group = this._groups().find(g => g.id === groupId);
+    if (!group) return;
+    const amounts = { ...(group.paidAmounts ?? {}) };
+    if (amount > 0.001) amounts[memberId] = Math.round(amount * 100) / 100;
+    else delete amounts[memberId];
+    // drop any stale legacy flag for this member so there's a single source of truth
+    const paidMembers = { ...(group.paidMembers ?? {}) };
+    delete paidMembers[memberId];
+    const updated: Group = { ...group, paidAmounts: amounts, paidMembers };
+    await this.storage.saveGroup(updated);
+    this._groups.update(gs => gs.map(g => g.id === groupId ? updated : g));
+  }
+
+  /**
+   * Unpaid dues to carry into a roster's next cycle, keyed by lowercased member
+   * name (member ids are regenerated each cycle, so name is the stable match).
+   * Only positive remaining debts are carried; advances/credits are ignored.
+   */
+  previousDuesForRoster(rosterId: string): Record<string, number> {
+    const prev = this.groupsForRoster(rosterId)[0]; // newest existing cycle
+    const map: Record<string, number> = {};
+    if (!prev) return map;
+    for (const s of prev.result.shares) {
+      const owed = s.total;
+      if (owed <= 0.01) continue;
+      const due = owed - GroupService.amountPaidFor(prev, s.memberId, owed);
+      if (due > 0.01) map[s.memberName.trim().toLowerCase()] = Math.round(due * 100) / 100;
+    }
+    return map;
+  }
 }
