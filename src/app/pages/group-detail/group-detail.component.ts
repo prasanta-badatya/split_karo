@@ -155,7 +155,7 @@ import { PayQrComponent } from '../../components/pay-qr/pay-qr.component';
               </button>
             </div>
             <div class="space-y-2">
-              <div *ngFor="let item of editExtraItems()" class="flex items-center gap-2">
+              <div *ngFor="let item of editExtraItems(); trackBy: trackExtra" class="flex items-center gap-2">
                 <input type="text" [ngModel]="item.label" (ngModelChange)="updateEditExtra(item.id, 'label', $event)"
                   placeholder="Item name" class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-400 min-w-0" />
                 <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden w-28 flex-shrink-0 bg-white">
@@ -509,6 +509,10 @@ export class GroupDetailComponent implements OnInit {
   removeEditExtra(id: string): void {
     this.editExtraItems.update(items => items.filter(i => i.id !== id));
   }
+
+  // Stable identity so editing a row doesn't recreate its inputs (which would
+  // drop focus and close the mobile keyboard after one keystroke).
+  trackExtra(_: number, item: ExtraItem): string { return item.id; }
 
   addEditMember(): void {
     this.editMembers.update(ms => [...ms, {
